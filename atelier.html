@@ -1700,6 +1700,7 @@ const ICONES = {
   metal:'<path d="M8 30l14-14 6 6-14 14z"/><path d="M22 16l8-8 10 10-8 8M30 8l4-4M36 14l4-4"/><path d="M10 40h28"/><path d="M33 30c-1 3 1 5 3 6"/>',
   electricite:'<path d="M27 4L10 27h12l-3 17 19-25H25z"/>',
   menuiserie:'<path d="M5 36L29 12h9v8L14 44H5z"/><path d="M10 36l3 3M15 31l3 3M20 26l3 3M25 21l3 3"/><rect x="35" y="3" width="10" height="15" rx="3"/>',
+  chauffage:'<path d="M10 14h28v26H10z"/><path d="M16 14v26M22 14v26M28 14v26M34 14v26"/><path d="M18 8q-3-3 0-6M26 8q-3-3 0-6M34 8q-3-3 0-6"/>',
   isolation:'<path d="M6 40h36M6 8h36"/><path d="M6 14c4 0 4 6 8 6s4-6 8-6 4 6 8 6 4-6 8-6 4 6 6 6M6 24c4 0 4 6 8 6s4-6 8-6 4 6 8 6 4-6 8-6 4 6 6 6"/>',
   plomberie:'<path d="M6 16h20v9H6z"/><path d="M26 18h8a6 6 0 0 1 6 6v5"/><path d="M16 16v-6M10 10h12"/><path d="M40 35c-2.5 3.5-2.5 6 0 7 2.5-1 2.5-3.5 0-7z"/>',
   jardin:'<path d="M10 26h28l-4 16H14z"/><path d="M24 26V12"/><path d="M24 19c-7 0-10-4-10-10 7 0 10 4 10 10zM24 15c6 0 9-3 9-9-6 0-9 3-9 9z"/>',
@@ -1712,9 +1713,10 @@ const FAMILLES = [
   {id:'sols',       nom:'Sols',       desc:'Carrelage, parquet, terrasse', outils:['carrelage','parquet','plinthes','terrasse']},
   {id:'maconnerie', nom:'Maçonnerie', desc:'Béton, fondations, parpaings', outils:['beton','fondations','mortier','crepi','parpaings','pente']},
   {id:'menuiserie', nom:'Menuiserie', desc:'Étagères, meubles, tables, finitions',  outils:[{g:'Étagères',outils:['m-etagere','m-murale','m-echelle','m-angle']},{g:'Meubles',outils:['m-biblio','m-bas','m-placard']},{g:'Casiers',outils:['m-casier','m-bouteilles']},{g:'Tables',outils:['m-tbasse','m-tsalon','m-sellette']},'m-etabli','finitions']},
-  {id:'jardin',     nom:'Jardin',     desc:'Nichoir, mangeoire, jardinières', outils:[{g:'Oiseaux',outils:['j-nichoir','j-mangeoire']},{g:'Jardinières',outils:['j-jardiniere','j-echelle','j-gradins']}]},
+  {id:'jardin',     nom:'Jardin',     desc:'Nichoir, jardinières, terrasse', outils:[{g:'Oiseaux',outils:['j-nichoir','j-mangeoire']},{g:'Jardinières',outils:['j-jardiniere','j-echelle','j-gradins']},'j-terrasse']},
   {id:'isolation',  nom:'Isolation',  desc:'Isolants, épaisseurs', outils:['isolants','epaisseurs','isol-qte']},
-  {id:'plomberie',  nom:'Plomberie',  desc:'Tuyaux, assemblages, évacuations', outils:[{g:'Alimentation',outils:['tuyaux','assemblages']},'evacuations']},
+  {id:'plomberie',  nom:'Plomberie',  desc:'Tuyaux, équipements, évacuations', outils:[{g:'Alimentation',outils:['tuyaux','assemblages','equipements']},'evacuations']},
+  {id:'chauffage',  nom:'Chauffage et ventilation', desc:'Puissance, appareils, VMC', outils:['ch-puissance','ch-appareils','ventilation']},
   {id:'fixation',   nom:'Chevilles et vis', desc:'Fixer au mur, assembler', outils:['chevilles','vis']},
   {id:'metal',      nom:'Métallurgie', desc:'Perçage, taraudage, soudure', outils:[{g:'Perçage',outils:['forets','taraudage']},'soudure']},
   {id:'electricite',nom:'Électricité',desc:'Câbles, tableau',              outils:[{g:'Installation',outils:['tableau','tab-elements','pieces']},'cables','multimetre','schemas','symboles']},
@@ -1754,7 +1756,7 @@ window.addEventListener('hashchange', route);
 golist.addEventListener('click', ()=>go('liste'));
 
 /* Couleurs pastel des rubriques : [fond, fond au survol] */
-const PASTELS={fixation:['#FBE3CF','#F5C6A0'],metal:['#E3E6EA','#C6CDD4'],bois:['#F3E3C3','#E9CE98'],murs:['#DCEBF7','#BBD6EE'],sols:['#E1F0DA','#C3E2B6'],maconnerie:['#F2DDD3','#E6BFAD'],
+const PASTELS={chauffage:['#FCE0D6','#F7BFA9'],fixation:['#FBE3CF','#F5C6A0'],metal:['#E3E6EA','#C6CDD4'],bois:['#F3E3C3','#E9CE98'],murs:['#DCEBF7','#BBD6EE'],sols:['#E1F0DA','#C3E2B6'],maconnerie:['#F2DDD3','#E6BFAD'],
   menuiserie:['#F7E5D3','#EFCBA7'],electricite:['#FFF2BD','#FFE48A'],conversions:['#D9F0EC','#B4E2DA'],jardin:['#EAF3CF','#D3E7A0'],plomberie:['#D2EAF6','#A8D3EC'],isolation:['#F7DDE4','#EFBDCB']};
 function showHome(){
   sub.textContent='Choisissez une rubrique, puis un sujet.';
@@ -2303,6 +2305,7 @@ function plFig(svg,lab){ return `<div class="sch-fig"><svg class="pl-svg" viewBo
 function fichesHTML(kind){
   const L=FICHE_L[kind]||(kind==='tuyaux'?PL_TUYAUX:kind==='isolants'?ISOLANTS:kind==='tableau'?EL_ELEMS:kind==='multi'?MM_FICHES:kind==='soud'?SOUD:PL_ASSEMB), T=TOOLS[cur];
   let s=kind==='tableau'?`<section class="card"><h2>Le tableau, de l’arrivée aux circuits</h2><p class="hint">Touchez un module pour voir sa fiche plus bas.</p><div class="sch-fig"><svg class="pl-svg el-svg" viewBox="0 0 400 340" role="img" aria-label="Schéma d’un tableau électrique">${elSchema()}</svg></div></section>`:'';
+  if(FICHE_TOP[kind]) s+=FICHE_TOP[kind]();
   s+=`<section class="card"><h2>${T.nom}</h2><p class="hint">${T.aide}</p>
     <div class="chips" id="fi-list">${L.map(x=>`<button class="chipb" type="button" data-fi="${x.id}" aria-pressed="false">${x.nom}</button>`).join('')}</div><div id="fi-view"></div></section>`;
   if(kind==='tuyaux') s+=`<section class="card"><h2>Quel diamètre pour chaque appareil ?</h2><p class="hint">Diamètre minimal du tube d’alimentation (eau froide et eau chaude), d’après les règles du DTU 60.11.</p>
@@ -2910,7 +2913,7 @@ const SD_ELEC=[['1,5 à 2 mm','1,6 mm','30 à 55 A'],['2 à 3 mm','2 mm','40 à 
 
 
 /* ============ FICHES GÉNÉRIQUES ============ */
-const FICHE_L={}, FICHE_BAS={};
+const FICHE_L={}, FICHE_BAS={}, FICHE_TOP={};
 function ficheGen(x){ return `<h3>${x.nom}</h3><p class="sch-res">${x.court}</p>${x.svg?`<div class="sch-fig"><svg class="pl-svg" viewBox="0 0 400 180" role="img" aria-label="${x.nom}">${x.svg}</svg></div>`:''}
   <div class="sch-txt">${x.sec.map(([t,a])=>t.startsWith('#')?`<div><b>${t.slice(1)}</b><ol>${a.map(i=>`<li>${i}</li>`).join('')}</ol></div>`:plListe(t,a)).join('')}</div>${x.note?`<p class="hint">💡 ${x.note}</p>`:''}`; }
 
@@ -3165,6 +3168,240 @@ TOOLS.pouces={nom:'Pouces',aide:'Convertir des pouces en millimètres, et retrou
       <h3>Et les écrans ?</h3><p>La taille d’une télé est la diagonale en pouces : 32" = 81 cm, 43" = 109 cm, 55" = 140 cm, 65" = 165 cm.</p>`;
     return {big,detail:det,extra,item:`${big}`};
   }};
+
+
+/* ============ TERRASSE EN BOIS ============ */
+const TER_LAMES={pin:['Pin traité autoclave classe 4',27,500,'#e6c48e'],douglas:['Douglas ou mélèze',27,500,'#d9a274'],exo:['Bois exotique (ipé, cumaru…)',21,400,'#9a5b36'],compo:['Composite',23,400,'#8a8580']};
+TEINTE.ter=[30,45,60];
+TOOLS['j-terrasse']={nom:'Terrasse en bois',aide:'Une terrasse en lames de bois sur lambourdes et plots réglables : toutes les quantités, l’écartement des lambourdes et la notice de pose en 3D.',
+  pic:'<path d="M4 30h40M4 26h40M4 22h40"/><path d="M8 30v8M20 30v8M32 30v8M44 30v8"/><path d="M4 8v14"/>',
+  champs:[N('L','Longueur (le long de la maison)','m',4),N('P','Profondeur (avancée)','m',3),S('lame','Lames',Object.entries(TER_LAMES).map(([k,l])=>[k,`${l[0]} (${l[1]} × 145 mm)`]),'pin'),
+    S('lg','Longueur des lames achetées',[['2.4','2,40 m'],['3','3 m'],['4.2','4,20 m'],['4.8','4,80 m']],'4.2'),
+    S('sup','Support',[['plots','Plots réglables sur dalles'],['cales','Cales sur sol stabilisé (terrasse basse)']],'plots'),N('h','Hauteur du dessus de la terrasse','cm',20),C('rive','Planches de rive (habillage du tour)',true)],
+  calc(v){ const Ld=TER_LAMES[v.lame]||TER_LAMES.pin, e=Ld[1], lw=145, j=5, ent=Ld[2], L=Math.max(1000,v.L*1000), Pm=Math.max(1000,v.P*1000), H=v.h*10, stock=Math.round(v.lg*1000);
+    const lh=70, lb=45, nl=Math.ceil(L/ent)+1, en=(L-lb)/(nl-1), nr=Math.ceil((Pm+j)/(lw+j));
+    const utile=Math.max(en,Math.floor((stock-10)/en)*en), npr=L<=stock-10?1:Math.ceil(L/utile), nb=Math.ceil(nr*npr*1.05), ndouble=npr>1?2*(npr-1):0;
+    const espP=500, npl=Math.ceil(Pm/espP)+1, nplots=(nl+ndouble)*npl, hplot=H-e-lh-40, warns=[], P=[], Q={}, info=[], notes=[];
+    P.push({nom:'Lame de terrasse',q:nb,L:stock,l:lw,t:'m',sec:`${e} × ${lw}`,note:`${nr} rangées de ${fr(L/1000,2)} m${npr>1?`, raboutées sur une lambourde doublée`:''} ; 5 % de chutes compris`});
+    P.push({nom:'Lambourde',q:nl+ndouble,L:Pm,l:lh,t:'m',sec:`${lb} × ${lh}`,note:`entraxe ${fr(en/10,1)} cm${ndouble?` ; dont ${ndouble} pour doubler les raboutages`:''}`});
+    if(v.rive){ const nrv=Math.ceil((L+2*Pm)/stock*1.05); P.push({nom:'Planche de rive',q:nrv,L:stock,l:Math.max(60,H-40),t:'m',sec:`${e} × ${lw}`,note:'lames recoupées en largeur, vissées sur le bout des lambourdes'}); }
+    if(v.sup==='plots'){ addQ(Q,`Plots réglables (hauteur ${fr(hplot/10,1)} cm environ)`,nplots); addQ(Q,'Dalles béton 30 × 30 cm sous les plots (ou plots sur gravier compacté)',nplots); }
+    else addQ(Q,'Cales imputrescibles (caoutchouc ou plastique) sous les lambourdes',nplots);
+    const vl=v.lame==='compo'?null:`Vis inox ${e<=23?'5':'5'} × ${lStd(e*2.5)} mm (2 par lame et par lambourde)`;
+    if(vl) addQ(Q,vl,nr*(nl+ndouble)*2); else { addQ(Q,'Clips de fixation invisibles (selon le fabricant)',nr*nl); addQ(Q,'Vis inox des clips',nr*nl); }
+    if(v.rive) addQ(Q,`Vis inox 5 × ${lStd(e*2.5)} mm (planches de rive)`,Math.ceil((L+2*Pm)/ent)*2);
+    Q['Bande bitumineuse adhésive sur les lambourdes']=`${fr((nl+ndouble)*Pm/1000*1.05,1)} m`;
+    Q['Géotextile (feutre anti-herbes)']=`${fr(L*Pm/1e6*1.1,1)} m²`;
+    if(v.lame!=='compo') Q['Saturateur (2 couches, environ 1 L pour 8 m² par couche)']=`${fr(L*Pm/1e6*2/8,1)} L`;
+    const S=L*Pm/1e6;
+    info.push(`Surface : ${fr(S,2)} m²`,`${nr} rangées de lames, ${nl} lambourdes à ${fr(en/10,1)} cm d’entraxe`,`${nplots} ${v.sup==='plots'?'plots':'cales'} (un tous les 50 cm sous chaque lambourde)`,...barres(P.filter(p=>p.nom==='Lambourde'),4000));
+    if(v.sup==='plots'&&hplot<25) warns.push(`Il ne reste que ${fr(Math.max(0,hplot)/10,1)} cm pour les plots : prenez une terrasse plus haute, ou posez les lambourdes sur des cales (terrasse basse).`);
+    if(H<100+e) warns.push('Laissez au moins 10 cm d’air sous les lames : le bois doit sécher par-dessous, sinon il pourrit.');
+    if(v.h>100) warns.push('Au-delà d’1 m de haut, il faut une vraie structure (poteaux, poutres) et un garde-corps : faites appel à un professionnel.');
+    if(npr>1) info.push(`Les lames de ${fr(stock/1000,2)} m ne couvrent pas toute la longueur : raboutez-les toujours au milieu d’une lambourde doublée, en décalant les joints d’une rangée à l’autre.`);
+    notes.push('Pente : 1 % environ (1 cm par mètre) en s’éloignant de la maison, pour que l’eau ne revienne pas vers le mur.',
+      'Laissez 5 mm entre les lames (une cale ou un clou de 5 mm), 1 cm contre le mur, et ne bouchez jamais le tour : l’air doit circuler dessous.',
+      'Les lames se posent face « lisse » ou « rainurée » dessus, au choix. Côté cœur du bois vers le bas pour qu’elles tuilent moins.',
+      'Pré-percez et fraisez toujours les lames (obligatoire dans le bois exotique), vis inox seulement.',
+      v.lame==='compo'?'Composite : respectez à la lettre l’entraxe et les clips du fabricant ; il se dilate beaucoup au soleil.':'Pas de finition, et le bois devient gris argenté au bout d’un an : c’est normal. Un saturateur garde sa couleur.');
+    // 3D
+    const pc={}, st=[], yL=H-e, yLb=yL-lh, xs=Array.from({length:nl},(_,i)=>Math.round(i*en));
+    pc.mur=B3('mur',0,0,-160,L,H+700,160,'mur');
+    const dal=[],plo=[],lam=[],lme=[],riv=[];
+    const zs=Array.from({length:npl},(_,k)=>Math.min(Pm-60,Math.round(k*(Pm-120)/(npl-1)+60)));
+    const xsAll=[...xs]; for(let k=1;k<npr;k++){ const xj=Math.round(k*utile/en)*en; [xj-lb,xj+lb].forEach(x=>{ if(x>0&&x<L-lb) xsAll.push(Math.round(x)); }); }
+    xsAll.forEach((x,i)=>{ pc['lb'+i]=B3('lb'+i,x,yLb,0,lb,lh,Pm,'m'); lam.push('lb'+i);
+      zs.forEach((z,k)=>{ const id=i+'_'+k; if(v.sup==='plots'){ pc['d'+id]=B3('d'+id,x-60+lb/2,0,z-60,120,40,120,'mur'); dal.push('d'+id); pc['pl'+id]=B3('pl'+id,x-30+lb/2,40,z-30,60,Math.max(5,yLb-40),60,'d'); plo.push('pl'+id); }
+        else { pc['c'+id]=B3('c'+id,x,Math.max(0,yLb-20),z-40,lb,Math.min(20,yLb),80,'d'); plo.push('c'+id); } }); });
+    for(let r=0;r<nr;r++){ const z=r*(lw+j), w=Math.min(lw,Pm-z); if(w<=10) break; const dec=(r%2)*(npr>1?Math.round(utile/en/2)*en:0);
+      let x0=0, k=0; const cuts=[]; let pos=npr>1?(dec||utile):L; while(pos<L){ cuts.push(pos); pos+=utile; }
+      [...cuts,L].forEach(xc=>{ const id='la'+r+'_'+(k++); pc[id]=B3(id,x0,yL,z,xc-x0-(xc<L?3:0),e,w,'ter'); lme.push(id); x0=xc; }); }
+    if(v.rive){ pc.rv1=B3('rv1',0,40,Pm,L,yL-40,e,'ter'); pc.rv2=B3('rv2',-e,40,0,e,yL-40,Pm+e,'ter'); pc.rv3=B3('rv3',L,40,0,e,yL-40,Pm+e,'ter'); riv.push('rv1','rv2','rv3'); }
+    TEINTE.ter=v.lame==='exo'?[22,45,40]:v.lame==='compo'?[30,5,52]:v.lame==='douglas'?[25,50,62]:[36,55,72];
+    st.push({t:'Préparer le sol',x:`Décapez la terre végétale (10 à 15 cm), compactez, étalez le géotextile. ${v.sup==='plots'?'Posez une dalle béton à chaque emplacement de plot, bien stable.':'Le sol doit être plat, compacté et drainant (gravier).'}`,add:['mur',...dal],vis:[]},
+      {t:'Plots et lambourdes',x:`Posez les lambourdes tous les ${fr(en/10,1)} cm, perpendiculaires à la maison, sur ${v.sup==='plots'?'les plots':'les cales'} tous les 50 cm. Réglez-les au niveau avec 1 % de pente vers le jardin (tendez un cordeau). Collez la bande bitumineuse sur le dessus.`,add:[...plo,...lam],vis:[]},
+      {t:'Les lames',x:`Première lame à 1 cm du mur, bien droite (cordeau). Vissez 2 vis inox par lambourde, pré-percées et fraisées, à 15-20 mm des bords. Gardez 5 mm entre les lames avec des cales.${npr>1?' Raboutez les lames au milieu d’une lambourde doublée et décalez les joints.':''}`,add:lme,vis:[]});
+    if(riv.length) st.push({t:'Les planches de rive',x:'Vissez les planches de rive sur le bout des lambourdes, en laissant 1 à 2 cm au-dessus du sol pour la ventilation.',add:riv,vis:[]});
+    st.push({t:'Finition',x:v.lame==='compo'?'Rien à faire : nettoyez simplement à l’eau savonneuse.':'Attendez quelques semaines que le bois sèche, puis passez le saturateur si vous voulez garder la couleur.',add:[],vis:[]});
+    // vue de dessus
+    const R=xsAll.map(x=>({cl:'mv-m',x,y:0,w:lb,h:Pm}));
+    if(v.sup==='plots') xsAll.forEach(x=>zs.forEach(z=>R.push({cl:'mv-d',x:x-30+lb/2,y:z-30,w:60,h:60})));
+    const out=meuble({...v,e,mat:'ext'},{m3d:{pc,st,cotes:{W:L,H,D:Pm}},titre:'Terrasse',pieces:P,q:Q,notes,warns,info,ep:-1,
+      vue:vue(L,Pm,R,{titre:'Lambourdes et plots vus de dessus (la maison est en bas)',sol:false})});
+    return {...out,big:`Terrasse ${fr(S,1)} m² · ${nb} lames · ${nplots} ${v.sup==='plots'?'plots':'cales'}`};
+  }};
+
+
+/* ============ CHAUFFAGE ============ */
+const CH_ISO=[['bbc','Très bien isolée (après 2012, BBC)',0.6],['rt2005','Bien isolée (2000 à 2012, ou rénovée)',0.8],['moy','Moyennement (1982 à 2000)',1.1],['faible','Peu isolée (1974 à 1982)',1.4],['non','Pas isolée (avant 1974)',1.8]];
+const CH_ZONE=[['m15','Montagne, Est (−15 °C)',-15],['m12','Nord-Est, Centre-Est (−12 °C)',-12],['m9','Nord, Centre, Bourgogne (−9 °C)',-9],['m7','Région parisienne, Val de Loire (−7 °C)',-7],['m5','Ouest, Bretagne, Sud-Ouest (−5 °C)',-5],['m2','Bord de la Méditerranée (−2 °C)',-2]];
+TOOLS['ch-puissance']={nom:'Puissance de chauffage',aide:'La puissance de radiateur qu’il faut pour une pièce, selon son volume, son isolation et le climat de votre région.',
+  champs:[N('surf','Surface de la pièce','m²',20),N('hsp','Hauteur sous plafond','m',2.5),S('iso','Isolation de la maison',CH_ISO.map(i=>[i[0],i[1]]),'moy'),
+    S('zone','Région',CH_ZONE.map(z=>[z[0],z[1]]),'m7'),N('ti','Température voulue','°C',19)],
+  calc(v){ const G=(CH_ISO.find(i=>i[0]===v.iso)||CH_ISO[2])[2], Te=(CH_ZONE.find(z=>z[0]===v.zone)||CH_ZONE[3])[2], V=v.surf*v.hsp, dT=v.ti-Te, W=Math.ceil(G*V*dT/100)*100;
+    const n=Math.max(1,Math.ceil(W/2000)), det=[`Calcul : ${fr(G,1)} × ${fr(V,1)} m³ × ${fr(dT,0)} °C d’écart = ${fr(G*V*dT,0)} W`,`Soit environ ${fr(W/v.surf,0)} W par m²`,
+      `Par exemple : ${n} radiateur${n>1?'s':''} de ${fr(Math.ceil(W/n/250)*250,0)} W${n>1?' (mieux répartis sous les fenêtres)':''}`];
+    if(v.ti>21) det.push({warn:'Chaque degré de plus augmente la consommation d’environ 7 %. 19 °C dans les pièces de vie et 17 °C dans les chambres suffisent.'});
+    const extra=`<h3>Repères de puissance</h3><div class="tbl"><table><thead><tr><th>Isolation</th><th>Coefficient</th><th>Pièce de 20 m² (2,50 m, région parisienne, 19 °C)</th></tr></thead><tbody>
+      ${CH_ISO.map(i=>`<tr${i[0]===v.iso?' class="hl"':''}><td>${i[1]}</td><td>${fr(i[2],1)}</td><td>${fr(Math.ceil(i[2]*50*26/100)*100,0)} W</td></tr>`).join('')}</tbody></table></div>
+      <h3>Les températures conseillées</h3><div class="tbl"><table><tbody><tr><td>Séjour, cuisine</td><td>19 °C</td></tr><tr><td>Chambres</td><td>16 à 17 °C</td></tr><tr><td>Salle de bain (pendant la toilette)</td><td>22 °C</td></tr><tr><td>Absence de plus de 2 jours</td><td>Mode hors-gel (7 à 8 °C)</td></tr></tbody></table></div>
+      <p class="hint">C’est une estimation simple, suffisante pour choisir un radiateur électrique. Pour une chaudière ou une pompe à chaleur de toute la maison, faites faire un calcul de déperditions par le chauffagiste : trop puissante, une pompe à chaleur s’use et consomme plus. <button class="lien" type="button" data-go="ch-appareils">Voir les appareils de chauffage</button></p>`;
+    return {big:`${fr(W,0)} W`,detail:det,extra,item:`Chauffage ${fr(v.surf,0)} m² : ${fr(W,0)} W`};
+  }};
+/* dessins : une pièce en coupe avec un appareil et des flèches de chaleur */
+const chPiece=(app,fl='')=>`<rect x="20" y="10" width="360" height="150" fill="none" stroke="var(--muted)"/><path d="M20 160h360" stroke="#7a6a55" stroke-width="3"/>${app}${fl}`;
+const chOnde=(x,y,n=3)=>Array.from({length:n},(_,i)=>`<path d="M${x+i*16} ${y}q-6-8 0-16t0-16" stroke="#e8743b" stroke-width="2.4" fill="none"/>`).join('');
+const chFl=(d,c='#e8743b')=>`<path d="${d}" stroke="${c}" stroke-width="2.4" fill="none" marker-end="url(#chm)"/>`;
+const chDefs=`<defs><marker id="chm" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="#e8743b"/></marker><marker id="chb" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="#2f7fd8"/></marker></defs>`;
+const chFb=d=>`<path d="${d}" stroke="#2f7fd8" stroke-width="2.4" fill="none" marker-end="url(#chb)"/>`;
+const CH_APP=[
+ {id:'conv',nom:'Convecteur',court:'Le radiateur électrique le plus simple : l’air froid entre en bas, se réchauffe sur une résistance et ressort chaud en haut.',
+  svg:chDefs+chPiece(`<rect x="60" y="110" width="90" height="40" rx="3" fill="#f2f2f0" stroke="#666"/>${[0,1,2,3,4,5].map(i=>`<path d="M${70+i*13} 114v8" stroke="#666"/>`).join('')}`,chFl('M105 108V40H300')+chFb('M330 150H160'))+`<text class="pl-tx" x="220" y="34">l’air chaud monte au plafond</text>`,
+  sec:[['Avantages',['Pas cher à l’achat, chauffe vite.']],['Inconvénients',['Chaleur inégale : chaud au plafond, froid aux pieds.','Assèche l’air, consommation élevée.']],['Conseil',['À réserver aux pièces peu utilisées (cellier, entrée). À remplacer en priorité par un modèle à inertie.']]]},
+ {id:'rayon',nom:'Panneau rayonnant',court:'Une plaque chauffée envoie de la chaleur « comme le soleil », qui chauffe les murs et les personnes.',
+  svg:chDefs+chPiece(`<rect x="60" y="100" width="90" height="50" rx="3" fill="#f2f2f0" stroke="#666"/>`,chOnde(170,140,4)),
+  sec:[['Avantages',['Chaleur plus douce que le convecteur, prix raisonnable.']],['Inconvénients',['S’arrête de chauffer dès qu’il se coupe : peu de confort dans une pièce mal isolée.']],['Conseil',['Bien pour les chambres d’une maison isolée.']]]},
+ {id:'inertie',nom:'Radiateur à inertie',court:'Un corps lourd (céramique, fonte, fluide) se charge en chaleur et la restitue doucement, même quand la résistance s’arrête.',
+  svg:chDefs+chPiece(`<rect x="60" y="96" width="100" height="56" rx="4" fill="#ece7df" stroke="#666"/>${[0,1,2,3].map(i=>`<rect x="${68+i*22}" y="104" width="16" height="40" rx="2" fill="#c9a98a"/>`).join('')}`,chOnde(180,140,4)),
+  sec:[['Avantages',['Chaleur stable et agréable, moins de marche-arrêt.','Les modèles récents ont détection de présence et de fenêtre ouverte.']],['Inconvénients',['Plus cher et lourd (fixation solide au mur).','Met plus de temps à chauffer.']],['Conseil',['Le meilleur choix en électrique pour les pièces de vie.']]]},
+ {id:'seche',nom:'Sèche-serviettes',court:'Un radiateur à barreaux pour la salle de bain, souvent avec soufflerie d’appoint.',
+  svg:chDefs+chPiece(`<rect x="80" y="40" width="8" height="110" fill="#ddd" stroke="#666"/><rect x="152" y="40" width="8" height="110" fill="#ddd" stroke="#666"/>${Array.from({length:9},(_,i)=>`<rect x="88" y="${46+i*11}" width="64" height="5" fill="#eee" stroke="#888"/>`).join('')}`,chOnde(180,120,3)),
+  sec:[['Avantages',['Sèche les serviettes et chauffe la salle de bain.']],['Inconvénients',['Couvert de serviettes, il chauffe mal la pièce.']],['Conseil',['Hors des volumes 0 et 1 de la douche, et branché sur une sortie de câble (pas une prise).']]]},
+ {id:'eau',nom:'Radiateurs à eau (chauffage central)',court:'Une chaudière (gaz, fioul, bois) ou une pompe à chaleur chauffe de l’eau qui circule dans tous les radiateurs.',
+  svg:chDefs+chPiece(`<rect x="290" y="70" width="50" height="80" rx="4" fill="#f2f2f0" stroke="#666"/><text class="pl-tx" x="315" y="64" text-anchor="middle">chaudière</text>${[0,1,2,3,4,5].map(i=>`<rect x="${70+i*14}" y="100" width="10" height="50" rx="3" fill="#f2f2f0" stroke="#666"/>`).join('')}<path d="M290 140H160" stroke="#d32f2f" stroke-width="3"/><path d="M160 150H290" stroke="#2f7fd8" stroke-width="3"/>`,chOnde(170,100,3)),
+  sec:[['Avantages',['Chaleur douce et homogène, une seule source pour toute la maison (et souvent l’eau chaude).']],['Inconvénients',['Installation et entretien (chaudière : entretien obligatoire chaque année).']],['Conseil',['Robinets thermostatiques sur chaque radiateur ; purgez les radiateurs à l’automne (voir « Équipements » en Plomberie).']]]},
+ {id:'plancher',nom:'Plancher chauffant',court:'Des tubes d’eau tiède (ou des câbles électriques) dans la chape chauffent tout le sol.',
+  svg:chDefs+chPiece(`<rect x="20" y="140" width="360" height="20" fill="#cfc6b8"/>${Array.from({length:12},(_,i)=>`<circle cx="${40+i*28}" cy="150" r="5" fill="#e8743b"/>`).join('')}`,[60,160,260].map(x=>chFl(`M${x} 136V80`)).join('')),
+  sec:[['Avantages',['Le plus confortable : chaleur douce, pieds au chaud, aucun radiateur visible.','Très économe avec une pompe à chaleur (eau à basse température).']],['Inconvénients',['Lent à réagir.','Se prévoit en construction ou en grosse rénovation (chape).']],['Conseil',['Revêtement de sol compatible (carrelage idéal, parquet adapté).']]]},
+ {id:'poele',nom:'Poêle à bois ou à granulés',court:'Le feu chauffe la pièce par rayonnement ; les modèles à granulés s’allument et se règlent tout seuls.',
+  svg:chDefs+chPiece(`<rect x="80" y="80" width="70" height="70" rx="4" fill="#3b3f44"/><rect x="92" y="96" width="46" height="34" rx="2" fill="#ff9a3c"/><rect x="108" y="10" width="14" height="70" fill="#555"/>`,chOnde(165,140,4)),
+  sec:[['Avantages',['Énergie bon marché et renouvelable, chaleur très agréable.','Le granulé est automatique (programmation).']],['Inconvénients',['Chauffe surtout la pièce où il est.','Stockage du bois ou des granulés, ramonage 2 fois par an (dont une pendant la saison de chauffe).']],['Conseil',['Faites-le installer par un professionnel (label RGE) et choisissez un appareil labellisé « Flamme verte ».']]]},
+ {id:'pacair',nom:'Pompe à chaleur air-air (climatisation réversible)',court:'Elle prend les calories de l’air extérieur et les souffle à l’intérieur ; l’été, elle fait l’inverse.',
+  svg:chDefs+chPiece(`<rect x="60" y="30" width="110" height="34" rx="8" fill="#f8f8f8" stroke="#666"/><rect x="390" y="110" width="0" height="0"/>`,chFl('M115 66q0 30 30 50'))+`<rect x="340" y="105" width="50" height="45" rx="4" fill="#e9ecef" stroke="#666"/><circle cx="365" cy="127" r="14" fill="none" stroke="#666"/><text class="pl-tx" x="365" y="100" text-anchor="middle">dehors</text>`,
+  sec:[['Avantages',['Très économe : 1 kWh d’électricité donne 3 à 4 kWh de chaleur.','Climatise l’été.']],['Inconvénients',['Air soufflé, un peu de bruit, unité extérieure visible.','Ne fait pas l’eau chaude.']],['Conseil',['Installation par un professionnel certifié (manipulation de fluide frigorigène).']]]},
+ {id:'pacEau',nom:'Pompe à chaleur air-eau',court:'Elle prend les calories de l’air extérieur pour chauffer l’eau des radiateurs ou du plancher chauffant.',
+  svg:chDefs+chPiece(`${[0,1,2,3,4,5].map(i=>`<rect x="${70+i*14}" y="100" width="10" height="50" rx="3" fill="#f2f2f0" stroke="#666"/>`).join('')}<path d="M340 130H160" stroke="#d32f2f" stroke-width="3"/>`,chOnde(170,100,3))+`<rect x="330" y="105" width="56" height="45" rx="4" fill="#e9ecef" stroke="#666"/><circle cx="358" cy="127" r="14" fill="none" stroke="#666"/><text class="pl-tx" x="358" y="100" text-anchor="middle">dehors</text>`,
+  sec:[['Avantages',['Remplace une chaudière, très économe, peut faire l’eau chaude.','Aides de l’État possibles (installateur RGE).']],['Inconvénients',['Coûteuse à l’achat.','Moins efficace par grand froid et avec de vieux radiateurs qui demandent de l’eau très chaude.']],['Conseil',['Isolez d’abord la maison : la pompe sera plus petite et moins chère.']]]},
+ {id:'regul',nom:'Régulation : thermostat, fil pilote, robinets',court:'Bien régler son chauffage fait économiser plus que de changer d’appareil.',
+  svg:chDefs+chPiece(`<rect x="70" y="60" width="60" height="70" rx="8" fill="#f8f8f8" stroke="#666"/><text x="100" y="102" text-anchor="middle" font-size="20" fill="#333">19°</text>`,'')+`<text class="pl-tx" x="160" y="80">programmation : 19 °C le jour,</text><text class="pl-tx" x="160" y="96">16 à 17 °C la nuit et en absence</text>`,
+  sec:[['Les outils',['Thermostat d’ambiance programmable : il pilote la chaudière ou la pompe à chaleur.','Fil pilote (fil noir) : il commande les radiateurs électriques depuis un programmateur central (confort, éco, hors-gel).','Robinets thermostatiques : chaque radiateur à eau s’arrête quand la pièce est à la bonne température.']],
+   ['Les bons gestes',['Ne couvrez pas les radiateurs (linge, meubles devant).','Fermez les volets et rideaux la nuit.','Baisser de 1 °C fait économiser environ 7 % de chauffage.']]]},
+];
+FICHE_L.chf=CH_APP;
+TOOLS['ch-appareils']={nom:'Les appareils de chauffage',aide:'Comment fonctionne chaque appareil de chauffage, ses avantages et ses défauts. Choisissez un appareil.',special:'fiches',fiches:'chf'};
+FICHE_BAS.chf=()=>`<section class="card"><h2>Lequel choisir ?</h2><div class="tbl"><table><thead><tr><th>Situation</th><th>Conseillé</th></tr></thead><tbody>
+  <tr><td>Remplacer de vieux convecteurs</td><td>Radiateurs à inertie, ou pompe à chaleur air-air</td></tr><tr><td>Chaudière fioul ou gaz ancienne</td><td>Pompe à chaleur air-eau (après isolation), ou chaudière à condensation</td></tr>
+  <tr><td>Maison à la campagne, bois disponible</td><td>Poêle à bois ou à granulés en complément</td></tr><tr><td>Construction neuve</td><td>Pompe à chaleur avec plancher chauffant</td></tr><tr><td>Salle de bain</td><td>Sèche-serviettes</td></tr></tbody></table></div>
+  <p class="hint">Avant tout changement de chauffage, regardez l’isolation (rubrique Isolation) : c’est souvent là que se fait la plus grosse économie. Pour les aides, renseignez-vous auprès de France Rénov’.</p></section>`;
+
+/* ============ VENTILATION ============ */
+function vtMaison(o){ // o: {entree, extract, insuf, double, nat}
+  let g=chDefs+`<path d="M20 70L200 14 380 70" fill="none" stroke="#8a4b2f" stroke-width="3"/><rect x="30" y="70" width="340" height="96" fill="none" stroke="var(--muted)"/><path d="M200 70v96M30 166h340" stroke="var(--muted)"/>
+    <text class="pl-tx" x="115" y="160" text-anchor="middle">séjour, chambres</text><text class="pl-tx" x="285" y="160" text-anchor="middle">cuisine, salle de bain, WC</text>`;
+  if(o.entree) g+=`<rect x="26" y="84" width="8" height="10" fill="#2f7fd8"/>`+chFb('M4 89H60')+chFb('M70 120H210');
+  if(o.extract) g+=`<rect x="276" y="70" width="18" height="6" fill="#888"/>`+chFl('M285 120V60')+`<rect x="250" y="34" width="70" height="22" rx="4" fill="#f2f2f0" stroke="#666"/><text class="el-mt" x="285" y="49" text-anchor="middle">${o.extract}</text>`+chFl('M320 45H392');
+  if(o.insuf) g+=`<rect x="80" y="34" width="70" height="22" rx="4" fill="#f2f2f0" stroke="#666"/><text class="el-mt" x="115" y="49" text-anchor="middle">VMI</text>`+chFb('M20 45H80')+chFb('M115 58V100')+chFb('M160 120H250')+`<rect x="356" y="90" width="8" height="10" fill="#888"/>`+chFl('M330 95H392');
+  if(o.double) g+=`<rect x="160" y="30" width="80" height="26" rx="4" fill="#f2f2f0" stroke="#666"/><text class="el-mt" x="200" y="47" text-anchor="middle">échangeur</text>`+chFb('M20 40H160')+chFb('M175 58Q140 70 115 100')+chFl('M285 100Q260 70 225 58')+chFl('M240 40H392');
+  if(o.nat) g+=`<rect x="26" y="84" width="8" height="10" fill="#2f7fd8"/>`+chFb('M4 89H60')+chFb('M70 120H210')+`<rect x="276" y="10" width="14" height="60" fill="#bbb"/>`+chFl('M283 120V4');
+  return g; }
+const VENT=[
+ {id:'principe',nom:'Pourquoi et comment ventiler',court:'Une famille produit 10 à 15 litres d’eau par jour (respiration, cuisine, douches). Il faut renouveler l’air en permanence pour évacuer cette humidité et la pollution intérieure.',
+  svg:vtMaison({entree:1,extract:'VMC'}),
+  sec:[['Le principe',['L’air neuf entre par les entrées d’air des pièces « sèches » (séjour, chambres), au-dessus des fenêtres.','Il traverse le logement en passant sous les portes.','Il est aspiré dans les pièces « humides » (cuisine, salle de bain, WC) et rejeté dehors.']],
+   ['À respecter',['Ne bouchez jamais les entrées d’air ni les bouches.','Laissez 1 cm sous les portes intérieures (2 cm pour la cuisine), ou une grille.','Pas de hotte branchée sur le conduit de VMC.']]]},
+ {id:'sfauto',nom:'VMC simple flux autoréglable',court:'Un moteur aspire l’air des pièces humides à débit constant, jour et nuit.',svg:vtMaison({entree:1,extract:'VMC'}),
+  sec:[['Avantages',['La moins chère, simple, fiable.']],['Inconvénients',['Rejette l’air chauffé dehors : pertes de chaleur.','Débit identique même quand la maison est vide.']],['Bon à savoir',['Une vitesse « cuisine » ou « grand débit » existe souvent (commande en cuisine).']]]},
+ {id:'sfhygro',nom:'VMC simple flux hygroréglable',court:'Les bouches (et parfois les entrées d’air) s’ouvrent plus ou moins selon l’humidité de la pièce.',svg:vtMaison({entree:1,extract:'VMC hygro'}),
+  sec:[['Avantages',['Ventile plus quand on en a besoin (douche, cuisine) et moins le reste du temps : moins de chaleur perdue.']],['Inconvénients',['Un peu plus chère que l’autoréglable.']],['Bon à savoir',['Hygro A : seules les bouches d’extraction sont hygroréglables. Hygro B : les entrées d’air aussi, c’est encore plus économe.']]]},
+ {id:'double',nom:'VMC double flux',court:'Deux réseaux de gaines : l’un aspire l’air vicié, l’autre souffle l’air neuf. Un échangeur récupère la chaleur de l’air sortant pour réchauffer l’air entrant.',svg:vtMaison({double:1}),
+  sec:[['Avantages',['Récupère jusqu’à 90 % de la chaleur.','L’air neuf est filtré (pollens, poussières), pas d’entrées d’air sur les fenêtres.']],['Inconvénients',['Chère, encombrante (gaines dans les combles).','Filtres à changer tous les 6 mois à 1 an.']],['Bon à savoir',['Intéressante dans une maison très bien isolée et étanche à l’air.']]]},
+ {id:'vmi',nom:'Ventilation par insufflation (VMI)',court:'Au lieu d’aspirer, elle souffle de l’air neuf filtré (et un peu préchauffé) dans le logement ; l’air vicié sort par des grilles.',svg:vtMaison({insuf:1}),
+  sec:[['Avantages',['Bonne contre l’humidité et la condensation des maisons anciennes.','Air filtré.']],['Inconvénients',['Filtre à changer, petite consommation de préchauffage.']]]},
+ {id:'nat',nom:'Ventilation naturelle',court:'Dans les maisons anciennes : l’air entre par des grilles basses et sort par des conduits verticaux, grâce au tirage.',svg:vtMaison({nat:1}),
+  sec:[['Avantages',['Gratuite et silencieuse.']],['Inconvénients',['Débit irrégulier (selon le vent et la température).','Souvent insuffisante une fois les fenêtres changées.']],['Bon à savoir',['Ne jamais boucher les grilles : elles sont aussi indispensables aux appareils à gaz.']]]},
+ {id:'entretien',nom:'Entretenir sa ventilation',court:'Une VMC encrassée ne ventile plus : quelques minutes deux fois par an suffisent.',svg:vtMaison({entree:1,extract:'VMC'}),
+  sec:[['#Tous les 6 mois',['Démontez les bouches d’extraction (elles se clipsent ou se tournent) et lavez-les à l’eau savonneuse. Ne mouillez pas la partie électrique des bouches hygro.','Dépoussiérez les entrées d’air des fenêtres.','Double flux ou VMI : nettoyez ou changez les filtres.']],
+   ['#Tous les 3 ans environ',['Faites vérifier le moteur et les gaines (une gaine écrasée ou débranchée dans les combles ne ventile plus).']],
+   ['Le test de la feuille',['Posez une feuille de papier sur une bouche d’extraction : elle doit rester collée. Sinon, la VMC est arrêtée ou encrassée.']]]},
+ {id:'humid',nom:'Humidité et condensation',court:'Buée sur les vitres, taches noires, odeur de moisi : l’air est trop humide.',svg:vtMaison({entree:1,extract:'VMC'}),
+  sec:[['Les bons repères',['Humidité idéale : 40 à 60 % (un petit hygromètre coûte quelques euros).','Température : pas en dessous de 16 °C dans les pièces occupées.']],
+   ['Que faire',['Vérifier que la VMC fonctionne (test de la feuille).','Aérer 5 à 10 minutes par jour, fenêtres grandes ouvertes, même l’hiver.','Couvercles sur les casseroles, hotte allumée, porte de la salle de bain fermée pendant la douche.','Ne pas sécher le linge dans une pièce sans ventilation.']],
+   ['Les moisissures',['Nettoyez au vinaigre blanc ou avec un produit anti-moisissures, puis cherchez la cause : pont thermique (mur froid), fuite, remontées d’humidité.']]]},
+];
+FICHE_L.vent=VENT;
+TOOLS.ventilation={nom:'La ventilation',aide:'À quoi sert la ventilation, comment fonctionnent les différentes VMC, l’entretien et la lutte contre l’humidité. Choisissez une fiche.',special:'fiches',fiches:'vent'};
+
+
+/* ============ ÉQUIPEMENTS DE PLOMBERIE ============ */
+const pqTube=(x1,x2,y=95)=>`<rect x="${x1}" y="${y-7}" width="${x2-x1}" height="14" fill="#cf8a52" stroke="#8a5a2b"/>`;
+const pqFleche=`<path d="M30 60h50m-8-6l8 6-8 6" stroke="#2f7fd8" stroke-width="2.4" fill="none"/><text class="pl-tx" x="30" y="52">sens de l’eau</text>`;
+const pqCorps=(x,w,h,cl='#d8b64e',y=95)=>`<rect x="${x}" y="${y-h/2}" width="${w}" height="${h}" rx="6" fill="${cl}" stroke="#7a6320"/>`;
+const pqMano=(x,y,t)=>`<path d="M${x} ${y+30}V${y+16}" stroke="#7a6320" stroke-width="5"/><circle cx="${x}" cy="${y}" r="16" fill="#fff" stroke="#555" stroke-width="2"/><path d="M${x} ${y}l9 -7" stroke="#d32f2f" stroke-width="2"/><text x="${x}" y="${y+12}" font-size="6" text-anchor="middle" fill="#333">${t}</text>`;
+const PEQ=[
+ {id:'arret',nom:'Robinet d’arrêt général et vanne ¼ de tour',court:'Il coupe l’eau de toute la maison. C’est le premier geste en cas de fuite.',
+  svg:pqFleche+pqTube(20,380)+pqCorps(160,80,40)+`<rect x="196" y="40" width="8" height="35" fill="#555"/><rect x="170" y="32" width="60" height="12" rx="4" fill="#d32f2f"/>`+plLab(230,38,300,24,'poignée : ¼ de tour = fermé'),
+  sec:[['Utilité',['Couper l’eau pour une réparation ou une fuite.','Une petite vanne ¼ de tour avant chaque appareil (WC, lavabo, machine) permet de ne couper qu’un seul point.']],['Fonctionnement',['Une sphère percée tourne d’un quart de tour : le trou est dans l’axe du tuyau (ouvert) ou en travers (fermé). Poignée dans l’axe du tuyau = ouvert.']],
+   ['Entretien',['Manœuvrez-le 2 fois par an (fermer puis ouvrir) : sinon il se grippe et ne sert à rien le jour de la fuite.','Repérez-le et montrez-le à toute la famille.']]],note:'Le robinet avant compteur appartient au distributeur d’eau ; on peut le fermer en cas d’urgence.'},
+ {id:'clapet',nom:'Clapet anti-retour',court:'Il laisse passer l’eau dans un seul sens.',
+  svg:pqFleche+pqTube(20,380)+pqCorps(150,100,46)+`<path d="M200 74v42" stroke="#555" stroke-width="3"/><path d="M200 74l18 10v22l-18 10" fill="#9aa3aa" stroke="#555"/><path d="M226 90l14 5-14 5" fill="#2f7fd8"/>`+plLab(210,80,300,30,'le clapet se ferme si l’eau repart en arrière'),
+  sec:[['Utilité',['Empêcher l’eau de la maison (chauffe-eau, arrosage, adoucisseur) de repartir vers le réseau public : c’est une protection de l’eau potable, obligatoire.']],['Fonctionnement',['Un petit clapet à ressort s’ouvre sous la pression de l’eau qui avance et se referme dès qu’elle s’arrête ou recule.']],['Bon à savoir',['Il est souvent intégré au compteur ou au robinet après compteur. Pour un circuit d’eau de pluie ou une piscine, il faut un disconnecteur.']]]},
+ {id:'filtre',nom:'Filtre (anti-impuretés)',court:'Il retient le sable, la rouille et les particules qui arrivent du réseau.',
+  svg:pqFleche+pqTube(20,380)+`<rect x="165" y="80" width="70" height="20" fill="#d8b64e" stroke="#7a6320"/><rect x="172" y="100" width="56" height="62" rx="8" fill="#dff1fb" stroke="#4a90c2"/><rect x="186" y="108" width="28" height="46" fill="#f3f3f3" stroke="#999" stroke-dasharray="2 2"/>`+plLab(228,130,392,150,'cartouche ou tamis à nettoyer'),
+  sec:[['Utilité',['Protège le réducteur de pression, les robinets, les chasses d’eau et les machines.']],['Fonctionnement',['L’eau traverse une cartouche ou un tamis inox qui retient les particules (souvent 25 à 90 microns).']],['Entretien',['Tamis : rincez-le tous les 3 à 6 mois (certains ont un robinet de purge).','Cartouche : changez-la quand elle est grise ou tous les 6 mois.','Placez-le juste après le compteur, avant le réducteur.']]]},
+ {id:'reducteur',nom:'Réducteur de pression',court:'Il abaisse la pression du réseau à une valeur constante et sans danger pour la maison, en général 3 bars.',
+  svg:pqFleche+pqTube(20,380)+pqCorps(140,120,50)+`<rect x="180" y="40" width="40" height="30" rx="4" fill="#d8b64e" stroke="#7a6320"/><rect x="194" y="26" width="12" height="16" fill="#555"/>`+pqMano(290,40,'3 bars')+plLab(200,30,90,20,'vis de réglage (sous le capot)')+plLab(275,52,330,150,'manomètre de contrôle'),
+  sec:[['Utilité',['Une pression trop forte (plus de 3,5 à 4 bars) fait du bruit, use les joints et les robinets, provoque des coups de bélier et peut abîmer le chauffe-eau.']],
+   ['Fonctionnement',['Un ressort et une membrane ferment plus ou moins le passage : quelle que soit la pression d’arrivée, la sortie reste à la pression réglée.']],
+   ['#Installation et réglage',['Après le compteur, le robinet d’arrêt et le filtre, avant toute la distribution. La flèche sur le corps indique le sens de l’eau.','Montez-le avec un manomètre et des raccords démontables (il doit rester accessible).','Réglage : fermez un robinet, lisez le manomètre, tournez la vis (sens horaire = plus de pression) jusqu’à 3 bars.']],
+   ['Entretien',['Contrôlez le manomètre de temps en temps : si la pression monte toute seule, le réducteur est fatigué (membrane ou filtre interne).']]],
+  note:'Pour connaître la pression de votre réseau, vissez un manomètre sur le robinet du jardin ou de la machine à laver, tous les autres robinets fermés.'},
+ {id:'groupe',nom:'Groupe de sécurité (chauffe-eau)',court:'Obligatoire sur l’arrivée d’eau froide d’un chauffe-eau à accumulation : il le protège contre l’explosion.',
+  svg:`<rect x="290" y="10" width="90" height="150" rx="40" fill="#f2f2f0" stroke="#666"/><text class="pl-tx" x="335" y="90" text-anchor="middle">chauffe-eau</text>`+pqTube(20,290,60)+pqCorps(120,90,44,'#d8b64e',60)+`<path d="M165 82v34" stroke="#555" stroke-width="6"/><path d="M150 116h30l-6 30h-18z" fill="#bbb" stroke="#555"/><rect x="140" y="26" width="50" height="14" rx="4" fill="#d32f2f"/>`+plLab(165,32,40,20,'manette de vidange')+plLab(165,140,60,160,'siphon vers l’égout')+`<path d="M30 30h50m-8-6l8 6-8 6" stroke="#2f7fd8" stroke-width="2.4" fill="none"/>`,
+  sec:[['Utilité',['En chauffant, l’eau se dilate : sans sortie, la pression monterait jusqu’à faire éclater la cuve.']],
+   ['Fonctionnement',['Un robinet d’arrêt, un clapet anti-retour (l’eau chaude ne repart pas dans le réseau) et une soupape tarée à 7 bars qui laisse s’échapper un peu d’eau quand la pression dépasse.','Quelques gouttes pendant la chauffe : c’est normal (dilatation).']],
+   ['#Entretien',['Une fois par mois, manœuvrez la manette de vidange quelques secondes : cela évite que le calcaire bloque la soupape.','S’il coule en permanence : pression du réseau trop forte (réducteur à poser) ou groupe entartré (à changer, environ tous les 5 ans).']],
+   ['Règles',['Monté directement sur l’entrée d’eau froide du chauffe-eau, sans robinet entre les deux, avec un siphon raccordé à l’évacuation.']]],
+  note:'Ne bouchez jamais l’écoulement du groupe de sécurité.'},
+ {id:'vase',nom:'Vase d’expansion',court:'Un petit réservoir avec une membrane et un coussin d’air, qui absorbe l’eau en trop quand elle se dilate.',
+  svg:pqFleche+pqTube(20,380)+`<path d="M200 88V70" stroke="#8a5a2b" stroke-width="8"/><ellipse cx="200" cy="40" rx="34" ry="30" fill="#e0e5ea" stroke="#555"/><path d="M168 42q32 -14 64 0" stroke="#333" stroke-width="2" fill="none"/><text class="pl-tx" x="200" y="30" text-anchor="middle">air</text><text class="pl-tx" x="200" y="58" text-anchor="middle">eau</text>`+plLab(232,42,320,24,'membrane'),
+  sec:[['Utilité',['Sanitaire : avec un réducteur ou un clapet, l’eau chauffée du chauffe-eau n’a plus où aller ; le vase évite que le groupe de sécurité coule à chaque chauffe.','Chauffage central : il absorbe la dilatation de l’eau des radiateurs (il est souvent dans la chaudière).']],
+   ['Fonctionnement',['L’eau qui se dilate entre dans le vase et comprime l’air derrière la membrane, puis ressort en refroidissant.']],['Entretien',['Vérifiez son gonflage chaque année (valve comme un pneu, réglée par le plombier).']]]},
+ {id:'antibelier',nom:'Anti-bélier',court:'Il amortit le « coup de marteau » dans les tuyaux quand un robinet ou une machine coupe l’eau brutalement.',
+  svg:pqFleche+pqTube(20,380)+`<path d="M200 88V72" stroke="#8a5a2b" stroke-width="8"/><rect x="186" y="20" width="28" height="54" rx="10" fill="#e0e5ea" stroke="#555"/><path d="M190 46h20" stroke="#333" stroke-width="3"/>`+plLab(214,40,392,24,'piston et coussin d’air'),
+  sec:[['Utilité',['Le coup de bélier (claquement dans les murs) fatigue les tuyaux, les raccords et les vannes des machines.']],['Fonctionnement',['Un petit piston sur coussin d’air absorbe la surpression soudaine.']],['Installation',['Au plus près de l’appareil qui le provoque : lave-linge, lave-vaisselle, robinet de jardin, chasse d’eau à fermeture rapide.','Vérifiez aussi la pression : au-delà de 3,5 bars, posez d’abord un réducteur.']]]},
+ {id:'adouc',nom:'Adoucisseur',court:'Il enlève le calcaire de l’eau dure, grâce à des billes de résine régénérées avec du sel.',
+  svg:pqFleche+pqTube(20,380)+`<rect x="140" y="20" width="60" height="140" rx="12" fill="#e8eef3" stroke="#555"/><rect x="220" y="60" width="60" height="100" rx="6" fill="#f6f6f6" stroke="#555"/><text class="pl-tx" x="170" y="100" text-anchor="middle">résine</text><text class="pl-tx" x="250" y="115" text-anchor="middle">sel</text>`,
+  sec:[['Utilité',['Utile quand l’eau est très calcaire (plus de 25 à 30 °f) : protège le chauffe-eau, la robinetterie, les machines.']],['Fonctionnement',['Les billes de résine échangent le calcaire contre du sodium. Quand elles sont saturées, l’appareil les rince avec de l’eau salée (régénération).']],
+   ['Entretien',['Remettez du sel régénérant régulièrement, désinfection annuelle.','Réglez-le pour garder 8 à 15 °f : une eau trop douce attaque les tuyaux.','Gardez un robinet d’eau non adoucie pour boire et cuisiner (cuisine).']]],note:'La dureté de votre eau (TH) est indiquée sur votre facture d’eau ou sur le site de votre commune.'},
+ {id:'mitigeur',nom:'Mitigeur thermostatique',court:'Il mélange l’eau chaude et froide et garde la température choisie, même si on ouvre un autre robinet.',
+  svg:pqTube(40,360,110)+`<rect x="120" y="80" width="160" height="40" rx="18" fill="#dfe3e6" stroke="#555"/><circle cx="135" cy="100" r="18" fill="#c9ced2" stroke="#555"/><circle cx="265" cy="100" r="18" fill="#c9ced2" stroke="#555"/><text x="135" y="104" font-size="9" text-anchor="middle" fill="#333">38°</text><rect x="196" y="120" width="8" height="30" fill="#888"/><circle cx="40" cy="110" r="0"/><text class="pl-tx" x="60" y="140">chaud</text><text class="pl-tx" x="320" y="140">froid</text>`+plLab(135,82,90,40,'butée de sécurité à 38 °C'),
+  sec:[['Utilité',['Confort, et sécurité contre les brûlures (enfants, personnes âgées) : idéal pour la douche.']],['Fonctionnement',['Une cartouche avec une cire qui se dilate règle seule le mélange d’eau chaude et froide.']],['Entretien',['Détartrez la cartouche et les filtres d’entrée si la température varie.']]]},
+ {id:'purgeur',nom:'Purgeur (radiateurs)',court:'Une petite vis en haut du radiateur pour évacuer l’air qui empêche l’eau chaude de circuler.',
+  svg:`${[0,1,2,3,4,5].map(i=>`<rect x="${110+i*30}" y="40" width="22" height="110" rx="6" fill="#f2f2f0" stroke="#666"/>`).join('')}<rect x="104" y="50" width="12" height="10" fill="#d8b64e" stroke="#555"/><path d="M110 48q-10-10 0-20" stroke="#9ac4e8" stroke-width="2" fill="none"/>`+plLab(104,55,40,30,'purgeur')+`<rect x="110" y="40" width="172" height="30" fill="#f3d3c3" opacity=".5"/>`+plLab(250,55,330,24,'haut froid = air'),
+  sec:[['Quand purger',['Le haut du radiateur reste froid alors que le bas est chaud, ou ça glougloute.']],['#Comment faire',['Chauffage en marche depuis un moment, puis arrêtez la pompe (ou la chaudière) et attendez 10 minutes.','Placez un chiffon et un petit récipient sous le purgeur.','Ouvrez la vis avec la clé de purge (ou un tournevis), doucement : l’air siffle.','Refermez dès que l’eau sort sans bulles.','Vérifiez la pression de la chaudière (souvent 1 à 1,5 bar à froid) et complétez si besoin.']]]},
+ {id:'fuite',nom:'En cas de fuite',court:'Les bons réflexes, et comment savoir s’il y a une fuite cachée.',
+  svg:pqFleche+pqTube(20,380)+`<path d="M200 102q-6 14 0 20 6-6 0-20z" fill="#2f7fd8"/><path d="M210 112q-5 10 0 14 5-4 0-14z" fill="#2f7fd8"/>`+plLab(200,110,300,150,'goutte à goutte : jusqu’à 35 m³ par an'),
+  sec:[['#Fuite visible',['Fermez le robinet d’arrêt général (ou la petite vanne de l’appareil).','Coupez l’électricité s’il y a de l’eau près d’une prise ou d’un appareil.','Épongez, puis réparez ou appelez un plombier. Prévenez l’assurance en cas de dégât des eaux (constat amiable avec le voisin).']],
+   ['#Fuite cachée : le test du compteur',['Le soir, notez les chiffres du compteur (et sa petite roue).','Ne tirez pas d’eau de la nuit (ni lave-linge, ni chasse d’eau).','Le matin, relisez : si les chiffres ont bougé, il y a une fuite.']],
+   ['Les fuites les plus fréquentes',['Chasse d’eau qui coule en permanence (un filet d’eau dans la cuvette).','Joint de robinet usé, groupe de sécurité qui coule en continu.']]],
+  note:'Une chasse d’eau qui fuit peut gaspiller plus de 200 litres par jour.'},
+];
+FICHE_L.peq=PEQ;
+TOOLS.equipements={nom:'Équipements et sécurité de l’eau',aide:'Réducteur de pression, groupe de sécurité, clapet, filtre, vase d’expansion, anti-bélier, adoucisseur… À quoi ils servent et comment ils fonctionnent. Touchez un élément sur le schéma ou un nom dans la liste.',special:'fiches',fiches:'peq'};
+FICHE_BAS.peq=()=>`<section class="card"><h2>Les bonnes pressions</h2><div class="tbl"><table><tbody>
+  <tr><td>Pression idéale dans la maison</td><td>2 à 3 bars</td></tr><tr><td>Réducteur conseillé</td><td>quand le réseau dépasse 3,5 à 4 bars</td></tr>
+  <tr><td>Soupape du groupe de sécurité</td><td>7 bars</td></tr><tr><td>Chaudière (circuit de chauffage, à froid)</td><td>1 à 1,5 bar en général</td></tr></tbody></table></div></section>`;
+function peqSchema(){ const it=[['arret','Arrêt',50,1],['clapet','Clapet',100,0],['filtre','Filtre',150,1],['reducteur','Réducteur',200,0],['adouc','Adoucisseur',250,1]];
+  let g=`<path d="M10 100H360V140" stroke="#cf8a52" stroke-width="10" fill="none"/><path d="M290 100V172H232" stroke="#cf8a52" stroke-width="8" fill="none"/><path d="M318 100V118" stroke="#cf8a52" stroke-width="6"/>
+    <rect x="335" y="140" width="56" height="66" rx="20" fill="#f2f2f0" stroke="#666"/><text class="el-mt" x="363" y="172" text-anchor="middle">chauffe-</text><text class="el-mt" x="363" y="183" text-anchor="middle">eau</text>
+    <text class="pl-tx" x="226" y="176" text-anchor="end">vers robinets, WC, machines</text><text class="pl-tx" x="6" y="136">réseau public</text>`;
+  it.forEach(([id,t,x,haut],i)=>{ g+=`<g class="el-mod" data-fi="${id}"><rect class="el-body" x="${x-17}" y="83" width="34" height="34" rx="6"/><text class="el-mt" x="${x}" y="104" text-anchor="middle">${i+1}</text></g><text class="pl-tx" x="${x}" y="${haut?74:136}" text-anchor="middle">${t}</text>`; });
+  g+=`<g class="el-mod" data-fi="vase"><rect class="el-body" x="303" y="118" width="30" height="22" rx="9"/><text class="el-mt" x="318" y="133" text-anchor="middle">7</text></g>`;
+  g+=`<g class="el-mod" data-fi="groupe"><rect class="el-body" x="345" y="108" width="30" height="24" rx="5"/><text class="el-mt" x="360" y="124" text-anchor="middle">6</text></g>`;
+  g+=`<text class="pl-tx" x="6" y="200">6 : groupe de sécurité · 7 : vase d’expansion</text>`;
+  return g; }
+
+FICHE_TOP.peq=()=>`<section class="card"><h2>L’arrivée d’eau, dans l’ordre</h2><p class="hint">Touchez un élément pour voir sa fiche plus bas.</p><div class="sch-fig"><svg class="pl-svg el-svg" viewBox="0 58 400 152" role="img" aria-label="Schéma de l’arrivée d’eau">${peqSchema()}</svg></div></section>`;
 
 function symbolesHTML(){
   return `<section class="card"><h2>Symboles électriques</h2><p class="hint">Les symboles qu’on trouve sur les plans et les schémas.</p>
