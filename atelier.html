@@ -490,7 +490,8 @@ function ordre3(ps){
   const n=it.length, avant=Array.from({length:n},()=>[]), deg=new Array(n).fill(0), E=0.5;
   for(let a=0;a<n;a++) for(let b=a+1;b<n;b++){ const A=it[a], Bb=it[b];
     if(A.sx[1]<=Bb.sx[0]+E||Bb.sx[1]<=A.sx[0]+E||A.sy[1]<=Bb.sy[0]+E||Bb.sy[1]<=A.sy[0]+E) continue;
-    let o=0; for(const i of [0,2,1]){ if(A.mx[i]<=Bb.mn[i]+E){ o=1; break; } if(Bb.mx[i]<=A.mn[i]+E){ o=-1; break; } }
+    let o=0, vu=new Set(); for(const i of [0,2,1]){ if(A.mx[i]<=Bb.mn[i]+E) vu.add(1); else if(Bb.mx[i]<=A.mn[i]+E) vu.add(-1); }
+    if(vu.size===1) o=[...vu][0];
     if((A.p.sur||[]).includes(Bb.p.id)) o=-1; if((Bb.p.sur||[]).includes(A.p.id)) o=1;
     if(A.p.cl==='mur'&&Bb.p.cl!=='mur') o=1; if(Bb.p.cl==='mur'&&A.p.cl!=='mur') o=-1;
     if(o===1){ avant[a].push(b); deg[b]++; } else if(o===-1){ avant[b].push(a); deg[a]++; } }
@@ -1526,6 +1527,167 @@ const TOOLS = {
   symboles:{nom:'Symboles et couleurs', aide:'Les symboles des plans électriques, les couleurs des fils et les sections courantes.', special:'symboles'},
   liste:{nom:'Liste de courses', aide:'Les matériaux que vous avez ajoutés depuis les calculateurs.', special:'liste'},
 };
+
+/* Tables : formes de pieds et encadrements de plateau */
+const BOIS_T=S('bois','Bois',[['pin','Pin ou sapin (intérieur)'],['dur','Chêne, hêtre ou frêne (intérieur)'],['ext','Bois d’extérieur (douglas, mélèze, pin traité)']],'pin');
+TEINTE.met=[210,8,32]; TEINTE.v=[192,45,82]; TEINTE.ca=[25,20,78];
+function hexa(id,b,t,cl){ return {id,cl,...sol3([b,t,...b.map((p,i)=>{ const j=(i+1)%4; return [p,b[j],t[j],t[i]]; })])}; }
+function barre3(id,A,B,s,cl){ const u=[0,1,2].map(i=>B[i]-A[i]), n=Math.hypot(...u), U=u.map(x=>x/n), ref=Math.abs(U[1])<0.9?[0,1,0]:[1,0,0];
+  let V=v3x(U,ref); const nv=Math.hypot(...V); V=V.map(x=>x/nv); const Wv=v3x(U,V), h=s/2;
+  const c=(P,a,b)=>[0,1,2].map(i=>P[i]+V[i]*a*h+Wv[i]*b*h), sq=P=>[c(P,-1,-1),c(P,1,-1),c(P,1,1),c(P,-1,1)];
+  return hexa(id,sq(A),sq(B),cl); }
+const PF_LIST=[['droits','Droits'],['fuseles','Fuselés (effilés vers le bas)'],['traineau','Traîneau (sur patins)'],['panneaux','Panneaux pleins'],['x','En X (croisés)'],['compas','Compas (inclinés, sur platines)'],['epingles','Épingles en métal']];
+const PF_BASSE=['droits','fuseles','traineau','panneaux'];
+function tableCalc(v,o){
+  const pf=v.pf||'droits', pt=v.pt||'deborde', H=v.H*10, W=v.W*10, D=v.D*10, e=v.e, ct=22, hc=o.hc, es=18;
+  const dep=pt==='affleure'||pf==='compas'||pf==='epingles'?0:v.dep*10, r=pt==='affleure'?0:6, sp=+v.sp;
+  const hp=H-e, Wf=W-2*dep, Df=D-2*dep, P=[], Q={}, notes=[], warns=[], info=[], pc={}, st=[];
+  const basse=v.basse&&PF_BASSE.includes(pf), ys=Math.max(60,v.hb*10), yt=ys-45;
+  const ass={tour:'2 tourillons et de la colle',poche:'2 vis de poche par l’intérieur',equ:'une équerre par l’intérieur'}[v.ass]||'2 tourillons et de la colle';
+  let bouts=0;
+  const sec=(a,b)=>`${a} × ${b}`;
+  /* ---------- piétement ---------- */
+  const xL=dep, xR=W-dep, zA=dep, zF=D-dep; // faces extérieures
+  const coins=[[xL,zA,1,1],[xR,zA,-1,1],[xL,zF,1,-1],[xR,zF,-1,-1]];
+  const ceint=(y0,h,s,x1,x2,z1,z2,ins)=>{ // 4 traverses entre (x1..x2) et (z1..z2), en retrait r
+    pc[s+'ar']=B3(s+'ar',x1,y0,z1-ins+r,x2-x1,h,ct,'m'); pc[s+'av']=B3(s+'av',x1,y0,z2+ins-r-ct,x2-x1,h,ct,'m');
+    pc[s+'g']=B3(s+'g',x1-ins+r,y0,z1,ct,h,z2-z1,'m'); pc[s+'d']=B3(s+'d',x2+ins-r-ct,y0,z1,ct,h,z2-z1,'m'); return [s+'ar',s+'av',s+'g',s+'d']; };
+  let pied=[], hautT=[], basT=[], tab=[], extraP=[], R=[];
+  if(['droits','fuseles','traineau'].includes(pf)){
+    const pat=pf==='traineau'?45:0, sb=pf==='fuseles'?Math.round(sp*0.55):sp, spAt=y=>sb+(sp-sb)*(y-pat)/(hp-pat);
+    coins.forEach(([ox,oz,dx,dz],i)=>{ const sq=(y,s)=>[[ox,y,oz],[ox+dx*s,y,oz],[ox+dx*s,y,oz+dz*s],[ox,y,oz+dz*s]];
+      pc['p'+i]=hexa('p'+i,sq(pat,sb),sq(hp,sp),'m'); pied.push('p'+i); });
+    P.push({nom:'Pied',q:4,L:hp-pat,l:sp,t:'m',sec:sec(sp,sp),note:pf==='fuseles'?`effilé sur les 2 faces intérieures : ${sp} mm en haut, ${sb} mm en bas`:''});
+    if(pat){ pc.pt1=B3('pt1',xL,0,zA,sp,pat,Df,'m'); pc.pt2=B3('pt2',xR-sp,0,zA,sp,pat,Df,'m'); pied.push('pt1','pt2'); P.push({nom:'Patin (traîneau)',q:2,L:Df,l:45,t:'m',sec:sec(sp,45),note:'sous chaque paire de pieds, bouts arrondis ou chanfreinés'}); bouts+=4; }
+    hautT=ceint(hp-hc,hc,'c',xL+sp,xR-sp,zA+sp,zF-sp,sp); bouts+=8;
+    P.push({nom:'Ceinture longue',q:2,L:Wf-2*sp,l:hc,t:'m',sec:sec(ct,hc),note:r?`en retrait de ${r} mm sur la face des pieds`:'affleurante avec la face des pieds (bandeau)'},{nom:'Ceinture courte',q:2,L:Df-2*sp,l:hc,t:'m',sec:sec(ct,hc)});
+    if(basse){ const s2=spAt(ys); basT=ceint(yt,45,'t',xL+s2,xR-s2,zA+s2,zF-s2,s2); bouts+=8;
+      P.push({nom:'Traverse basse longue',q:2,L:Math.round(Wf-2*s2),l:45,t:'m',sec:sec(ct,45),note:`dessus à ${fr(ys/10,1)} cm du sol`},{nom:'Traverse basse courte',q:2,L:Math.round(Df-2*s2),l:45,t:'m',sec:sec(ct,45)});
+      pc.eb=B3('eb',xL+s2,ys,zA,Wf-2*s2,es,Df,'p'); pc.eb2=B3('eb2',xL,ys,zA+s2,s2,es,Df-2*s2,'p'); pc.eb3=B3('eb3',xR-s2,ys,zA+s2,s2,es,Df-2*s2,'p'); tab=['eb','eb2','eb3'];
+      P.push({nom:'Tablette basse',q:1,L:Wf,l:Df,e:es,t:'p',ch:0,note:`entaillée aux 4 coins de ${Math.round(s2)} × ${Math.round(s2)} mm`}); }
+    R.push(pf==='fuseles'?{cl:'mv-m',poly:[[xL,pat],[xL+sb,pat],[xL+sp,hp],[xL,hp]]}:{cl:'mv-m',x:xL,y:pat,w:sp,h:hp-pat},pf==='fuseles'?{cl:'mv-m',poly:[[xR,pat],[xR-sb,pat],[xR-sp,hp],[xR,hp]]}:{cl:'mv-m',x:xR-sp,y:pat,w:sp,h:hp-pat},{cl:'mv-m',x:xL+sp,y:hp-hc,w:Wf-2*sp,h:hc});
+    if(pat) R.push({cl:'mv-m',x:xL,y:0,w:sp,h:pat},{cl:'mv-m',x:xR-sp,y:0,w:sp,h:pat});
+    if(basse){ const s2=spAt(ys); R.push({cl:'mv-m',x:xL+s2,y:yt,w:Wf-2*s2,h:45},{cl:'mv-p',x:xL+s2,y:ys,w:Wf-2*s2,h:es}); }
+    st.push({t:'Les deux côtés',x:`Assemblez chaque côté : 2 pieds${pat?' sur leur patin':''}, la ceinture courte en haut${basse?' et la traverse courte en bas':''}, avec ${ass} à chaque bout. Serrez et vérifiez l’équerrage.`,add:[...pied,'cg','cd',...(basse?['tg','td']:[])],vis:[]},
+      {t:'Ceintures longues',x:`Reliez les deux côtés par les ceintures longues${basse?' et les traverses basses':''}. Posez la table sur un sol plat : les 4 pieds doivent toucher.`,add:['car','cav',...(basse?['tar','tav']:[])],vis:[]});
+    if(pf==='fuseles') notes.push('Pieds fuselés : tracez l’effilement sur les deux faces intérieures, sciez à la scie à ruban ou à la scie circulaire avec un gabarit, puis rabotez. Les faces extérieures restent droites.');
+    if(pf==='traineau') notes.push('Pieds traîneau : chaque paire de pieds est reliée en bas par un patin. La table glisse sans rayer le parquet et elle est très stable.');
+  }
+  else if(pf==='panneaux'){ const tp=Math.max(22,e), fz=Math.round(Df*0.2), hn=40;
+    const poly=[[zA,0],[zA+fz,0],[zA+fz,hn],[zF-fz,hn],[zF-fz,0],[zF,0],[zF,hp],[zA,hp]];
+    pc.pg=PX3('pg',poly,xL,tp,'m'); pc.pd=PX3('pd',poly,xR-tp,tp,'m'); pied=['pg','pd'];
+    P.push({nom:'Panneau de côté (pied plein)',q:2,L:hp,l:Df,e:tp,t:'p',note:`découpe en bas : ${fr((Df-2*fz)/10,1)} cm de large, 4 cm de haut, pour qu’il pose sur ses 2 bouts`});
+    pc.car=B3('car',xL+tp,hp-hc,zA+r,Wf-2*tp,hc,ct,'m'); pc.cav=B3('cav',xL+tp,hp-hc,zF-r-ct,Wf-2*tp,hc,ct,'m'); hautT=['car','cav']; bouts+=4;
+    P.push({nom:'Ceinture longue',q:2,L:Wf-2*tp,l:hc,t:'m',sec:sec(ct,hc)});
+    if(basse){ pc.eb=B3('eb',xL+tp,ys,zA,Wf-2*tp,es,Df,'p'); tab=['eb']; P.push({nom:'Tablette basse',q:1,L:Wf-2*tp,l:Df,e:es,t:'p',ch:2*(Wf-2*tp)}); addQ(Q,'Tasseaux 20 × 20 mm sous la tablette (ou tourillons)',2); }
+    R.push({cl:'mv-m',x:xL,y:0,w:tp,h:hp},{cl:'mv-m',x:xR-tp,y:0,w:tp,h:hp},{cl:'mv-m',x:xL+tp,y:hp-hc,w:Wf-2*tp,h:hc}); if(basse) R.push({cl:'mv-p',x:xL+tp,y:ys,w:Wf-2*tp,h:es});
+    st.push({t:'Les panneaux de côté',x:'Découpez l’arrondi ou l’encoche du bas de chaque panneau (scie sauteuse), poncez les chants.',add:pied,vis:[]},
+      {t:'Ceintures',x:`Reliez les deux panneaux par les ceintures longues, avec ${ass} à chaque bout.${basse?' Vissez des tasseaux sur les panneaux et posez-y la tablette.':''}`,add:[...hautT],vis:[]});
+    notes.push('Pieds pleins : un style moderne et très stable. Prenez un panneau épais (massif collé ou contreplaqué de 22 mm et plus) et soignez les chants.');
+  }
+  else if(pf==='x'){ const bt=27, bw0=70, Hx=hp-hc, a=Math.atan2(Hx,Df), bw=bw0/Math.sin(a);
+    [[xL,1],[xR-2*bt,-1]].forEach(([x0,s],k)=>{ const p1=[[zA,0],[zA+bw,0],[zF,Hx],[zF-bw,Hx]], p2=[[zF-bw,0],[zF,0],[zA+bw,Hx],[zA,Hx]];
+      pc['xa'+k]=PX3('xa'+k,p1,x0,bt,'m'); pc['xb'+k]=PX3('xb'+k,p2,x0+bt,bt,'m'); pc['xr'+k]=B3('xr'+k,x0,Hx,zA,2*bt,hc,Df,'m'); pied.push('xa'+k,'xb'+k,'xr'+k); });
+    const ym=Hx/2; pc.en=B3('en',xL+2*bt,ym-35,D/2-13,Wf-4*bt,70,26,'m');
+    pc.car=B3('car',xL+2*bt,hp-hc,zA+r,Wf-4*bt,hc,ct,'m'); pc.cav=B3('cav',xL+2*bt,hp-hc,zF-r-ct,Wf-4*bt,hc,ct,'m'); hautT=['en','car','cav']; bouts+=6;
+    const Lx=Math.round(Math.hypot(Df-bw,Hx)+bw*Math.cos(a));
+    P.push({nom:'Branche de X',q:4,L:Lx,l:bw0,t:'m',sec:sec(bt,bw0),note:`bouts coupés à ${Math.round(a*180/Math.PI)}° ; assemblées à mi-bois au croisement`},
+      {nom:'Traverse haute de côté',q:2,L:Df,l:hc,t:'m',sec:sec(2*bt,hc)},{nom:'Entretoise (au milieu des X)',q:1,L:Wf-4*bt,l:70,t:'m',sec:'26 × 70'},{nom:'Ceinture longue',q:2,L:Wf-4*bt,l:hc,t:'m',sec:sec(ct,hc)});
+    R.push({cl:'mv-m',x:xL,y:0,w:2*bt,h:hp},{cl:'mv-m',x:xR-2*bt,y:0,w:2*bt,h:hp},{cl:'mv-m',x:xL+2*bt,y:ym-35,w:Wf-4*bt,h:70},{cl:'mv-m',x:xL+2*bt,y:hp-hc,w:Wf-4*bt,h:hc});
+    st.push({t:'Les X',x:`Tracez le croisement sur les deux branches, entaillez-les à mi-épaisseur (mi-bois) et assemblez-les à la colle. Vissez la traverse haute sur chaque X.`,add:pied,vis:[]},
+      {t:'Entretoise et ceintures',x:`Reliez les deux X par l’entretoise au milieu (une vis de 6 × 100 dans chaque croisement) et par les ceintures longues en haut.`,add:hautT,vis:[]});
+    notes.push('Pieds en X : l’entretoise du milieu rend la table très rigide. Faites un gabarit en carton à taille réelle pour reporter les angles.');
+  }
+  else if(pf==='compas'){ const ins=70, ec=Math.round(hp*Math.tan(10*Math.PI/180)), a=45, b=30;
+    coins.forEach(([ox,oz,dx,dz],i)=>{ const cx=ox+dx*(ins+a/2), cz=oz+dz*(ins+a/2), bx=cx-dx*ec*0.75, bz=cz-dz*ec*0.75;
+      pc['p'+i]=hexa('p'+i,[[bx-b/2,0,bz-b/2],[bx+b/2,0,bz-b/2],[bx+b/2,0,bz+b/2],[bx-b/2,0,bz+b/2]],[[cx-a/2,hp,cz-a/2],[cx+a/2,hp,cz-a/2],[cx+a/2,hp,cz+a/2],[cx-a/2,hp,cz+a/2]],'m'); pied.push('p'+i); });
+    if(W>700){ pc.r1=B3('r1',ins,hp-45,ins+a+10,27,45,D-2*(ins+a+10),'m'); pc.r2=B3('r2',W-ins-27,hp-45,ins+a+10,27,45,D-2*(ins+a+10),'m'); hautT=['r1','r2'];
+      P.push({nom:'Renfort sous le plateau',q:2,L:D-2*(ins+a+10),l:45,t:'m',sec:'27 × 45',note:'vissé sous le plateau, empêche le plateau de se voiler'}); }
+    addQ(Q,`Pieds compas tournés ou effilés, ${fr(hp/10,0)} cm (tout faits)`,4); addQ(Q,'Platines de fixation inclinées (10 à 15°) et leurs vis',4);
+    R.push({cl:'mv-m',poly:[[ins,hp],[ins+a,hp],[ins-ec+b,0],[ins-ec,0]]},{cl:'mv-m',poly:[[W-ins,hp],[W-ins-a,hp],[W-ins+ec-b,0],[W-ins+ec,0]]});
+    st.push({t:'Les platines',x:'Retournez le plateau sur une couverture. Vissez les 4 platines inclinées à 7 cm des bords, inclinaison tournée vers les coins.',add:hautT,vis:[]},
+      {t:'Les pieds',x:'Vissez chaque pied dans sa platine à la main, jusqu’au bout. Retournez la table.',add:pied,vis:[]});
+    notes.push('Pieds compas (style scandinave) : le plus simple est d’acheter des pieds tout faits avec leurs platines inclinées. Plateau de 22 mm au moins pour bien tenir les vis.');
+  }
+  else if(pf==='epingles'){ const ins=50, rod=10;
+    coins.forEach(([ox,oz,dx,dz],i)=>{ const cx=ox+dx*(ins+20), cz=oz+dz*(ins+20);
+      pc['pl'+i]=B3('pl'+i,cx-40,hp-4,cz-20,80,4,40,'met');
+      const A1=[cx-30,hp-4,cz], A2=[cx+30,hp-4,cz], Bt=[cx-dx*15,0,cz-dz*15];
+      pc['ea'+i]=barre3('ea'+i,A1,Bt,rod,'met'); pc['eb'+i]=barre3('eb'+i,A2,Bt,rod,'met'); pied.push('pl'+i,'ea'+i,'eb'+i); });
+    addQ(Q,`Pieds épingle en métal, ${fr(hp/10,0)} cm (2 tiges de 10 mm)`,4); addQ(Q,'Vis à bois 4 × 25 mm (4 par pied)',16);
+    [[ins,1],[W-ins,-1]].forEach(([x,d])=>R.push({cl:'mv-m',poly:[[x-d*10,hp],[x-d*4,hp],[x+d*13,0],[x+d*9,0]]},{cl:'mv-m',poly:[[x+d*44,hp],[x+d*50,hp],[x+d*15,0],[x+d*11,0]]}));
+    st.push({t:'Les pieds épingle',x:'Retournez le plateau sur une couverture. Présentez chaque pied à 5 cm des bords, pointe vers le coin, et vissez sa platine : 4 vis 4 × 25.',add:pied,vis:[]});
+    notes.push('Pieds épingle : on les achète tout faits (acier brut ou peint). Trois tiges au lieu de deux pour une table lourde. Plateau de 22 mm au moins, ou 27 mm s’il est long.');
+  }
+  if(v.basse&&!PF_BASSE.includes(pf)) info.push('Pas de tablette basse avec cette forme de pieds.');
+  if(basse&&st.length) st.push({t:'Tablette basse',x:pf==='panneaux'?'Posez la tablette sur ses tasseaux et vissez par-dessous.':'Entaillez les coins de la tablette autour des pieds, posez-la sur les traverses basses et vissez par-dessous.',add:tab,vis:[]});
+  /* ---------- plateau ---------- */
+  const pl=[], Ht=pt==='rebord'?H+30:H;
+  const plat=(x0,z0,w,d,y0,ep,pref)=>{ if(v.pl==='planches'){ const n=Math.max(2,Math.ceil(d/145)), lw=d/n; for(let i=0;i<n;i++){ const id=pref+i; pc[id]=B3(id,x0,y0,z0+i*lw+(i?1:0),w,ep,lw-(i?1:0),'p'); pl.push(id); }
+      P.push({nom:'Planche du plateau',q:n,L:w,l:Math.round(lw),t:'m',sec:sec(ep,Math.round(lw)),note:'collées à chant (serre-joints)'}); addQ(Q,'Serre-joints (pour coller les planches)',Math.max(3,Math.ceil(w/350))); }
+    else { pc[pref]=B3(pref,x0,y0,z0,w,ep,d,'p'); pl.push(pref); P.push({nom:'Plateau',q:1,L:w,l:d,e:ep,t:'p',ch:2*(w+d)}); } };
+  if(pt==='cadre'){ const fw=70, cw=W-2*fw, cd=D-2*fw;
+    pc.fa=B3('fa',0,hp,0,W,e,fw,'p'); pc.fb=B3('fb',0,hp,D-fw,W,e,fw,'p'); pc.fc=B3('fc',0,hp,fw,fw,e,cd,'p'); pc.fd=B3('fd',W-fw,hp,fw,fw,e,cd,'p'); pl.push('fa','fb','fc','fd');
+    P.push({nom:'Cadre long du plateau',q:2,L:W,l:fw,t:'m',sec:sec(e,fw),note:'coupes d’onglet à 45° (plus joli) ou bouts droits'},{nom:'Cadre court du plateau',q:2,L:cd,l:fw,t:'m',sec:sec(e,fw)});
+    const c=v.centre||'panneau', top=H-2;
+    if(c==='panneau'){ pc.ce=B3('ce',fw,top-18,fw,cw,18,cd,'p'); pl.push('ce'); P.push({nom:'Panneau central',q:1,L:cw+20,l:cd+20,e:18,t:'p',note:'1 cm de plus de chaque côté, logé dans la feuillure'}); }
+    else if(c==='lattes'){ const n=Math.max(3,Math.round(cw/70)), lw=cw/n; for(let i=0;i<n;i++){ pc['la'+i]=B3('la'+i,fw+i*lw+(i?3:0),top-18,fw,lw-(i?3:0),18,cd,'p'); pl.push('la'+i); } P.push({nom:'Latte du centre',q:n,L:cd+20,l:Math.round(lw),t:'m',sec:sec(18,Math.round(lw)),note:'posées dans la feuillure, petit jour entre elles'}); }
+    else if(c==='verre'){ pc.su=B3('su',fw,top-26,fw,cw,14,cd,'p'); pc.ve=B3('ve',fw,top-8,fw,cw,8,cd,'v'); pl.push('su','ve'); P.push({nom:'Fond sous le verre',q:1,L:cw+20,l:cd+20,e:12,t:'p',note:'facultatif : contreplaqué peint ou tissu tendu'}); addQ(Q,`Verre trempé 8 mm, ${fr((cw+16)/10,1)} × ${fr((cd+16)/10,1)} cm, bords polis (chez un miroitier)`,1); addQ(Q,'Pastilles silicone anti-glisse',6); }
+    else { pc.su=B3('su',fw,top-20,fw,cw,12,cd,'p'); pl.push('su'); const t=100, nx=Math.floor(cw/(t+3)), nz=Math.floor(cd/(t+3)), gx=(cw-nx*t)/(nx+1), gz=(cd-nz*t)/(nz+1);
+      for(let i=0;i<nx;i++) for(let j=0;j<nz;j++){ const id='ca'+i+'_'+j; pc[id]=B3(id,fw+gx+i*(t+gx),top-8,fw+gz+j*(t+gz),t,8,t,'ca'); pl.push(id); }
+      P.push({nom:'Support du carrelage (CTBX 12 mm)',q:1,L:cw+20,l:cd+20,e:12,t:'p'}); addQ(Q,`Carreaux 10 × 10 cm (ou mosaïque) : ${nx*nz} carreaux, soit ${fr(cw*cd/1e6,2)} m² + 10 %`,1); addQ(Q,'Colle à carrelage et joint (petits pots)',1); }
+    addQ(Q,'Défonceuse avec fraise à feuillure 10 mm (ou tasseaux 15 × 15 vissés sous le cadre)',1);
+    st.push({t:'Le cadre du plateau',x:`Assemblez les 4 pièces du cadre (onglets collés et tourillonnés, ou bouts droits vissés par-dessous). Faites une feuillure de 10 × ${c==='verre'?26:20} mm tout autour de l’intérieur.`,add:['fa','fb','fc','fd'],vis:[]},
+      {t:'Le centre',x:{panneau:'Posez le panneau central dans la feuillure, sans le coller (il doit pouvoir bouger), et fixez-le par de petites cales vissées dessous.',lattes:'Posez les lattes dans la feuillure avec un petit jour de 3 mm entre elles, vissez-les par-dessous.',verre:'Posez le fond, puis les pastilles silicone et le verre trempé : il doit affleurer à 2 mm sous le cadre.',carrelage:'Collez le support dans la feuillure, puis les carreaux à la colle à carrelage ; faites les joints le lendemain.'}[c],add:pl.filter(i=>!['fa','fb','fc','fd'].includes(i)),vis:[]});
+  }
+  else { plat(0,0,W,D,hp,e,'pl0');
+    const vis0=['compas','epingles'].includes(pf); (vis0?st.unshift.bind(st):st.push.bind(st))({t:'Plateau',x:vis0?`${v.pl==='planches'?'Collez les planches à chant aux serre-joints et laissez sécher une nuit. ':''}Poncez le plateau, arrondissez les arêtes et posez-le à l’envers sur une couverture.`:`${v.pl==='planches'?'Collez les planches à chant aux serre-joints et laissez sécher une nuit. ':''}Posez le plateau à l’envers, centrez le piétement dessus${dep?` (débord de ${fr(dep/10,1)} cm)`:''} et fixez-le ${['compas','epingles'].includes(pf)?'(déjà fait avec les pieds)':'par des taquets : 2 par ceinture'}.`,add:pl.slice(),vis:[]});
+    if(pt==='rebord'){ const rb=18; pc.ra=B3('ra',0,H,0,W,30,rb,'p'); pc.rb=B3('rb',0,H,D-rb,W,30,rb,'p'); pc.rc=B3('rc',0,H,rb,rb,30,D-2*rb,'p'); pc.rd=B3('rd',W-rb,H,rb,rb,30,D-2*rb,'p');
+      P.push({nom:'Rebord long',q:2,L:W,l:48,t:'m',sec:sec(rb,48),note:'vissé sur le chant du plateau, dépasse de 3 cm'},{nom:'Rebord court',q:2,L:D-2*rb,l:48,t:'m',sec:sec(rb,48)});
+      st.push({t:'Le rebord',x:'Vissez et collez les 4 rebords sur les chants du plateau : ils dépassent de 3 cm au-dessus. Arrondissez le haut au papier de verre.',add:['ra','rb','rc','rd'],vis:[]}); }
+  }
+  if(pt==='cadre'||pt==='rebord'){}
+  if(!['compas','epingles'].includes(pf)) { addQ(Q,'Taquets de fixation du plateau (ou petites équerres)',8); addQ(Q,'Vis à bois 4 × 30 mm',16+(basse?8:0)); }
+  if(bouts){ if(v.ass==='tour'){ addQ(Q,'Tourillons Ø 8 × 40 mm',2*bouts); addQ(Q,'Colle à bois vinylique (flacon)',1); } else if(v.ass==='poche'){ addQ(Q,'Vis de poche 4 × 30 mm (gabarit de perçage incliné)',2*bouts); addQ(Q,'Colle à bois vinylique (flacon)',1); } else addQ(Q,'Équerres d’assemblage 40 mm et leurs vis',bouts); }
+  addQ(Q,'Patins feutre',pf==='panneaux'?4:pf==='x'?4:4);
+  st.push({t:'Finition',x:'Cassez les arêtes au papier de verre, poncez, dépoussiérez et appliquez la finition (voir « Traiter et finir le bois »). Collez les patins feutre.',add:[],vis:[]});
+  /* plateau en 2D */
+  R.unshift({cl:'mv-p',x:0,y:hp,w:W,h:e}); if(pt==='rebord') R.push({cl:'mv-p',x:0,y:H,w:18,h:30},{cl:'mv-p',x:W-18,y:H,w:18,h:30});
+  notes.unshift(...o.notes);
+  notes.push(v.bois==='ext'?'Dehors : vis inox et finition au saturateur ou à l’huile d’extérieur.':'Fixez le plateau en bois massif par des taquets : il peut ainsi travailler sans fendre.');
+  if(W>1000&&['deborde','affleure','rebord'].includes(pt)&&e<27) warns.push('Plateau de plus d’1 m : prenez 27 mm d’épaisseur au moins pour qu’il ne fléchisse pas.');
+  if(['compas','epingles'].includes(pf)&&e<22) warns.push('Avec des pieds vissés sous le plateau, il faut un plateau de 22 mm au moins.');
+  if(H>2.6*Math.min(W,D)&&!['compas'].includes(pf)) warns.push(`La table est haute (${fr(v.H,0)} cm) pour sa base étroite : elle risque de basculer. Élargissez un peu.`);
+  info.unshift(`Pieds : ${PF_LIST.find(p=>p[0]===pf)[1].toLowerCase()} · plateau ${({deborde:'qui déborde',affleure:'affleurant avec bandeau',cadre:'encadré',rebord:'avec rebord'})[pt]}`);
+  const out=meuble({...v,e:pt==='cadre'?18:v.pl==='panneau'?e:es,mat:v.bois==='ext'?'ext':'massif'},{m3d:{pc,st,cotes:{W,H:Ht,D}},titre:o.titre,pieces:P,q:Q,notes,warns,info,ep:pt!=='cadre'&&v.pl==='panneau'?e:es,
+    vue:vue(W,Ht,R,{titre:o.titre+' vue de face'})});
+  return {...out,big:`${o.titre} ${fr(v.W,0)} × ${fr(v.D,0)} cm, ${fr(Ht/10,0)} cm de haut`};
+}
+const TCH=(d)=>[N('H','Hauteur totale','cm',d.H),N('W','Longueur du plateau','cm',d.W),N('D','Largeur du plateau','cm',d.D),
+  S('pf','Forme des pieds',PF_LIST,d.pf||'droits'),
+  S('sp','Section des pieds',[['35','35 × 35 mm'],['45','45 × 45 mm'],['58','58 × 58 mm'],['70','70 × 70 mm']],d.sp,{k:'pf',v:['droits','fuseles','traineau']}),
+  S('pt','Plateau',[['deborde','Qui déborde des pieds'],['affleure','Affleurant, avec bandeau'],['cadre','Encadré (cadre + centre)'],['rebord','Avec rebord tout autour']],d.pt||'deborde'),
+  N('dep','Débord du plateau','cm',d.dep,[{k:'pt',v:['deborde','cadre','rebord']},{k:'pf',v:['droits','fuseles','traineau','panneaux','x']}]),
+  S('pl','Plateau en…',[['panneau','Un panneau (massif collé ou contreplaqué)'],['planches','Planches massives côte à côte']],d.pl,{k:'pt',v:['deborde','affleure','rebord']}),
+  S('centre','Centre du cadre',[['panneau','Panneau de bois'],['lattes','Lattes'],['verre','Verre trempé'],['carrelage','Carrelage']],'panneau',{k:'pt',v:['cadre']}),
+  N('e','Épaisseur du plateau (ou du cadre)','mm',d.e),
+  C('basse','Tablette basse',true,{k:'pf',v:PF_BASSE}),N('hb','Hauteur de la tablette basse','cm',d.hb,[{k:'basse',v:['true']},{k:'pf',v:PF_BASSE}]),
+  S('ass','Assemblage des ceintures',[['tour','Tourillons et colle'],['poche','Vis de poche (cachées)'],['equ','Équerres métalliques']],'tour',{k:'pf',v:['droits','fuseles','traineau','panneaux','x']}),BOIS_T];
+Object.assign(MENU,{
+  'm-tbasse':{nom:'Petite table basse', aide:'Une petite table carrée pour le bout du canapé ou à côté d’un fauteuil, avec tablette basse.',
+    pic:'<path d="M6 18h36v4H6zM10 22v20M38 22v20M10 34h28"/>',
+    champs:TCH({H:50,W:50,D:50,dep:2,sp:'45',pl:'panneau',e:22,hb:15}),
+    calc(v){ return tableCalc(v,{titre:'Table d’appoint',hc:70,notes:['Hauteur conseillée : à peu près celle de l’accoudoir du canapé (50 à 60 cm).']}); }},
+  'm-tsalon':{nom:'Table de salon', aide:'La table basse devant le canapé : grand plateau, pieds solides et tablette pour les revues.',
+    pic:'<path d="M3 20h42v4H3zM7 24v14M41 24v14M7 33h34"/>',
+    champs:TCH({H:42,W:110,D:60,dep:3,sp:'58',pl:'planches',e:27,hb:12}),
+    calc(v){ return tableCalc(v,{titre:'Table de salon',hc:80,notes:['Hauteur conseillée : celle de l’assise du canapé (40 à 45 cm). Longueur : environ les deux tiers du canapé, posée à 40 cm de lui.']}); }},
+  'm-sellette':{nom:'Sellette porte-plantes', aide:'Une petite table haute et étroite pour mettre en valeur une plante ou un pot de fleurs, avec une tablette en bas.',
+    pic:'<path d="M15 14h18v3H15zM17 17v27M31 17v27M17 34h14"/><path d="M20 14l1-6h6l1 6M24 8c-3-4-1-6 0-6 1 0 3 2 0 6"/>',
+    champs:TCH({H:70,W:35,D:35,dep:2,sp:'35',pl:'panneau',e:18,hb:20}),
+    calc(v){ return tableCalc(v,{titre:'Sellette',hc:50,notes:['Mettez toujours une coupelle sous le pot : l’eau d’arrosage tache et fait gonfler le bois.','Pour une grosse plante en pot de terre (plus de 15 kg), prenez des pieds de 45 × 45 mm et un plateau de 22 mm.']}); }},
+});
+
 Object.assign(TOOLS, MENU, JARDIN);
 
 /* ============ FAMILLES (ajouter un bouton = ajouter une ligne ici) ============ */
@@ -1549,7 +1711,7 @@ const FAMILLES = [
   {id:'murs',       nom:'Murs',       desc:'Peinture, papier peint, placo', outils:['papier-peint','peinture','placo','enduit']},
   {id:'sols',       nom:'Sols',       desc:'Carrelage, parquet, terrasse', outils:['carrelage','parquet','plinthes','terrasse']},
   {id:'maconnerie', nom:'Maçonnerie', desc:'Béton, fondations, parpaings', outils:['beton','fondations','mortier','crepi','parpaings','pente']},
-  {id:'menuiserie', nom:'Menuiserie', desc:'Étagères, meubles, établi',  outils:[{g:'Étagères',outils:['m-etagere','m-murale','m-echelle','m-angle']},{g:'Meubles',outils:['m-biblio','m-bas','m-placard']},{g:'Casiers',outils:['m-casier','m-bouteilles']},'m-etabli']},
+  {id:'menuiserie', nom:'Menuiserie', desc:'Étagères, meubles, tables, finitions',  outils:[{g:'Étagères',outils:['m-etagere','m-murale','m-echelle','m-angle']},{g:'Meubles',outils:['m-biblio','m-bas','m-placard']},{g:'Casiers',outils:['m-casier','m-bouteilles']},{g:'Tables',outils:['m-tbasse','m-tsalon','m-sellette']},'m-etabli','finitions']},
   {id:'jardin',     nom:'Jardin',     desc:'Nichoir, mangeoire, jardinières', outils:[{g:'Oiseaux',outils:['j-nichoir','j-mangeoire']},{g:'Jardinières',outils:['j-jardiniere','j-echelle','j-gradins']}]},
   {id:'isolation',  nom:'Isolation',  desc:'Isolants, épaisseurs', outils:['isolants','epaisseurs','isol-qte']},
   {id:'plomberie',  nom:'Plomberie',  desc:'Tuyaux, assemblages, évacuations', outils:[{g:'Alimentation',outils:['tuyaux','assemblages']},'evacuations']},
@@ -1718,7 +1880,7 @@ function readValues(){
 }
 function update(){
   const v=readValues();
-  TOOLS[cur].champs.forEach(c=>{ if(!c.si) return; const el=view.querySelector(`[data-f="${c.id}"]`); if(el) el.hidden=!c.si.v.includes(String(v[c.si.k])); });
+  TOOLS[cur].champs.forEach(c=>{ if(!c.si) return; const el=view.querySelector(`[data-f="${c.id}"]`); if(el) el.hidden=!(Array.isArray(c.si)?c.si:[c.si]).every(q=>q.v.includes(String(v[q.k]))); });
   try{ last=TOOLS[cur].calc(v); }catch(e){ last={big:'—',detail:['Vérifiez les valeurs saisies.']}; }
   document.getElementById('big').textContent=last.big;
   const d=document.getElementById('detail'); d.innerHTML='';
@@ -2858,9 +3020,19 @@ function finSvg(t){ const bois=`<rect x="40" y="90" width="320" height="56" fill
    vernis:`<rect x="40" y="80" width="320" height="10" fill="#f6e7b0" opacity=".8" stroke="#c8a94a"/><path d="M60 83h80" stroke="#fff" stroke-width="2"/>`+plLab(200,84,250,40,'film dur et transparent'),
    peinture:`<rect x="40" y="80" width="320" height="10" fill="#5f8f6b" stroke="#3f6a4b"/>`+plLab(200,84,250,40,'film opaque coloré'),
    cire:`<rect x="40" y="86" width="320" height="4" fill="#e8cf8f"/>`+plLab(200,88,250,40,'fine couche douce, lustrée'),
-   teinte:`<rect x="40" y="90" width="320" height="14" fill="#5a3a20" opacity=".6"/>`+plLab(200,96,250,40,'colore sans protéger')}[t]||'';
+   teinte:`<rect x="40" y="90" width="320" height="14" fill="#5a3a20" opacity=".6"/>`+plLab(200,96,250,40,'colore sans protéger'),
+   vitrif:`<rect x="40" y="76" width="320" height="14" fill="#f6e7b0" opacity=".85" stroke="#c8a94a"/><path d="M60 80h120" stroke="#fff" stroke-width="2"/>`+plLab(200,80,60,40,'film épais et très dur (3 couches)'),
+   laque:`<rect x="40" y="88" width="320" height="2" fill="#ddd"/><rect x="40" y="76" width="320" height="12" fill="#2f4f6f" stroke="#1d3347"/><path d="M60 79h140" stroke="#fff" stroke-width="2.5" opacity=".8"/>`+plLab(200,80,60,40,'sous-couche + laque : lisse comme un miroir'),
+   gomme:`<rect x="40" y="84" width="320" height="6" fill="#b8742a" opacity=".7"/><path d="M60 86h100" stroke="#fff" stroke-width="1.5" opacity=".8"/><ellipse cx="300" cy="66" rx="26" ry="14" fill="#f3efe6" stroke="#999"/>`+plLab(200,86,140,40,'dizaines de couches très fines')+plLab(300,60,330,24,'le tampon'),
+   prep:`<rect x="150" y="62" width="100" height="22" rx="4" fill="#5d7fa3" stroke="#334e6b"/><rect x="150" y="84" width="100" height="6" fill="#c9a24a"/><path d="M120 74h-30m8-6l-8 6 8 6M280 74h30m-8-6l8 6-8 6" stroke="#d32f2f" stroke-width="2" fill="none"/>`+plLab(200,88,60,30,'cale à poncer, dans le sens du fil')}[t]||'';
   return bois+L+`<text class="pl-tx" x="200" y="168" text-anchor="middle">coupe d’une planche</text>`; }
 const FIN=[
+ {id:'prep',nom:'Préparer le bois',court:'Le secret d’une belle finition : 80 % du travail est dans la préparation.',svg:finSvg('prep'),
+  sec:[['Poncer',['Toujours dans le sens du fil du bois.','Progressivement : grain 80 (bois brut), puis 120, puis 180 (240 pour une laque).','Ne sautez pas de grain : les rayures du gros grain resteraient visibles.']],
+   ['Dépoussiérer',['Aspirateur, puis chiffon microfibre légèrement humide.','La moindre poussière fait des grains dans un vernis.']],
+   ['Selon le bois',['Bois à gros pores (chêne, frêne) : bouche-pores pour un vernis bien lisse.','Bois résineux (pin) : isolez les nœuds (gomme-laque ou primaire anti-nœuds) avant peinture.','Bois exotiques gras (teck, ipé) : dégraissez à l’acétone juste avant.','Pour une finition à l’eau : mouillez légèrement le bois, laissez sécher, reponcez au 180 (les fibres qui se relèvent sont coupées).']],
+   ['#Ancienne finition',['Lessivez, puis poncez jusqu’au bois sain.','Ou décapez au décapant gel, en gants et à l’extérieur.','Ne passez jamais un vernis sur une cire : décapez d’abord.']]],
+  note:'Faites toujours un essai sur une chute ou sous le meuble : couleur et rendu changent beaucoup d’un bois à l’autre.'},
  {id:'huile',nom:'Huile',court:'Elle pénètre dans le bois, le nourrit et laisse un aspect naturel, mat ou satiné.',svg:finSvg('huile'),
   sec:[['Pour quoi',['Meubles, plans de travail (huile alimentaire), mobilier de jardin (huile de teck ou spéciale extérieur).']],['Avantages',['Aspect naturel, toucher du bois.','Se répare par endroits sans tout poncer.']],['Inconvénients',['Entretien régulier : 1 à 2 fois par an dehors.','Protège moins des taches qu’un vernis.']],
    ['#Application',['Poncez au grain 120 puis 180, dépoussiérez.','Passez l’huile au pinceau ou au chiffon, généreusement.','Après 15 à 20 minutes, essuyez tout l’excédent.','2 à 3 couches à 24 h d’intervalle.']]],
@@ -2873,10 +3045,22 @@ const FIN=[
   sec:[['Pour quoi',['Volets, portes, fenêtres, bardages, abris de jardin, chalets.']],['Avantages',['Protège bien du soleil (si teintée).','Laisse voir le veinage.']],['Inconvénients',['À refaire tous les 3 à 6 ans selon l’exposition.','Une lasure incolore protège mal des UV.']],
    ['#Application',['Bois neuf : poncez légèrement, dépoussiérez. Ancien : lessivez, poncez les parties écaillées.','3 couches sur bois neuf, 1 à 2 en entretien.','Ponçage très léger entre les couches.']]],
   note:'Plus la teinte est foncée, plus elle protège du soleil… mais plus le bois chauffe. Évitez les teintes très sombres en plein sud.'},
- {id:'vernis',nom:'Vernis et vitrificateur',court:'Un film dur et transparent qui protège des taches et de l’usure.',svg:finSvg('vernis'),
-  sec:[['Pour quoi',['Meubles, portes intérieures, boiseries.','Vitrificateur : parquets et escaliers (très résistant au passage).','Vernis marin : bateaux, quelques usages extérieurs.']],['Avantages',['Très résistant, facile à nettoyer.','Mat, satiné ou brillant.']],['Inconvénients',['Dehors, il finit par craqueler et s’écailler : il faut tout poncer.','Une rayure profonde se voit.']],
+ {id:'vernis',nom:'Vernis',court:'Un film transparent qui protège des taches et de l’usure, mat, satiné ou brillant.',svg:finSvg('vernis'),
+  sec:[['Pour quoi',['Meubles, portes intérieures, boiseries, jouets (vernis norme jouets).','Vernis marin : bateaux, quelques usages extérieurs.']],['Avantages',['Très résistant, facile à nettoyer.','Mat, satiné ou brillant.']],['Inconvénients',['Dehors, il finit par craqueler et s’écailler : il faut tout poncer.','Une rayure profonde se voit.']],
    ['#Application',['Poncez au grain 120 puis 180, dépoussiérez soigneusement.','1re couche, puis ponçage léger (grain 240) quand elle est sèche.','2 à 3 couches fines plutôt qu’une épaisse.']]],
-  note:'Pour un parquet, le vitrificateur à l’eau sent peu et sèche vite.'},
+  note:'Le vernis « à l’eau » (acrylique) sent peu, sèche vite et jaunit moins ; le vernis glycéro ou polyuréthane est un peu plus résistant mais sent fort.'},
+ {id:'vitrif',nom:'Vitrificateur',court:'Le vernis le plus dur : il « vitrifie » les parquets et les escaliers.',svg:finSvg('vitrif'),
+  sec:[['Pour quoi',['Parquets, escaliers, plans de travail, tout ce qui s’use beaucoup.']],['Avantages',['Très résistant au passage, aux taches et à l’eau.','Mat, satiné ou brillant.']],['Inconvénients',['Aspect un peu « plastique ».','Une rayure profonde ne se répare pas localement : on reponce toute la lame ou la pièce.']],
+   ['#Application',['Poncez le parquet (ponceuse à bande puis bordureuse, grains 40, 80, 120), aspirez soigneusement.','1re couche au rouleau ou au spalter, dans le sens des lames.','Après séchage, égrenez légèrement (grain 150 ou grille), aspirez.','2e et 3e couches.','On marche en chaussettes après 24 h ; meubles et tapis après une semaine (le temps qu’il durcisse vraiment).']]],
+  note:'Le vitrificateur à l’eau (« trafic intense » pour les escaliers) sent peu, sèche vite et jaunit peu.'},
+ {id:'laque',nom:'Laque',court:'Une peinture très tendue, brillante ou satinée, qui donne une surface lisse comme un miroir.',svg:finSvg('laque'),
+  sec:[['Pour quoi',['Meubles modernes, façades de cuisine, portes, en MDF ou bois à grain fin (hêtre, peuplier).']],['Avantages',['Fini très lisse et élégant, toutes couleurs.','Se lessive facilement.']],['Inconvénients',['Montre le moindre défaut : la préparation est longue.','Les traces de pinceau ou de rouleau se voient sur le brillant.']],
+   ['#Application',['Bouchez et enduisez les défauts, poncez au grain 180 puis 240.','Une sous-couche (apprêt), poncée au grain 240 quand elle est sèche.','2 à 3 couches fines de laque au rouleau laqueur (mousse fine) ou au pistolet, en croisant puis en lissant.','Égrenez au grain 320 entre les couches, dépoussiérez au chiffon.']]],
+  note:'Sur le chêne ou le châtaignier, la laque à l’eau fait remonter des taches de tanins : sous-couche anti-tanins obligatoire.'},
+ {id:'gomme',nom:'Gomme-laque (vernis au tampon)',court:'La finition des ébénistes : des dizaines de couches très fines passées au tampon donnent un éclat profond.',svg:finSvg('gomme'),
+  sec:[['Pour quoi',['Beaux meubles en noyer, merisier, acajou ; restauration de meubles anciens.']],['Avantages',['Éclat et profondeur magnifiques.','Se répare facilement (elle se redissout à l’alcool).']],['Inconvénients',['Très long, demande de l’entraînement.','Craint l’eau, l’alcool et la chaleur : pas pour une table de cuisine.']],
+   ['#Application',['Bois poncé très fin (grain 240 à 320), pores bouchés.','Faites un tampon : du coton enveloppé dans une toile de lin fine.','Imbibez-le de gomme-laque diluée à l’alcool, une goutte d’huile de vaseline pour qu’il glisse.','Passez-le en mouvements de 8 et en cercles, sans jamais vous arrêter sur le bois.','Recommencez sur plusieurs jours, couche après couche.']]],
+  note:'La gomme-laque sert aussi de « barrage » : elle isole les nœuds résineux du pin avant une peinture.'},
  {id:'peinture',nom:'Peinture pour bois',court:'Un film coloré et opaque : la protection la plus longue dehors.',svg:finSvg('peinture'),
   sec:[['Pour quoi',['Volets, portes, fenêtres, meubles relookés, bardages.']],['Avantages',['Toutes les couleurs, protège très bien.','Microporeuse : elle laisse respirer le bois.']],['Inconvénients',['On ne voit plus le bois.','Rénovation : grattage et ponçage des parties écaillées.']],
    ['#Application',['Bois neuf : sous-couche (ou peinture « sans sous-couche »).','Bois ancien : lessivez, poncez, rebouchez les fissures.','2 couches.']]],
@@ -2891,13 +3075,25 @@ const FIN=[
   note:'Une teinte paraît toujours plus foncée une fois vernie.'},
 ];
 FICHE_L.fin=FIN;
-TOOLS.finitions={nom:'Les finitions du bois',aide:'Huile, saturateur, lasure, vernis, peinture, cire, teinte : ce que chacune fait, où l’utiliser et comment l’appliquer. Choisissez une finition.',special:'fiches',fiches:'fin'};
+TOOLS.finitions={nom:'Traiter et finir le bois',aide:'Préparation, huile, saturateur, lasure, vernis, vitrificateur, laque, gomme-laque, peinture, cire, teinte : ce que fait chaque méthode, ses avantages et défauts, comment l’appliquer, et quelle méthode pour quel bois. Choisissez une fiche.',special:'fiches',fiches:'fin'};
 FICHE_BAS.fin=()=>`<section class="card"><h2>Quelle finition pour quoi ?</h2><div class="tbl"><table><tbody>
   <tr><td>Meuble d’intérieur</td><td>Huile, vernis ou cire</td></tr><tr><td>Plan de travail, planche à découper</td><td>Huile alimentaire (ou vitrificateur spécial)</td></tr>
   <tr><td>Parquet, escalier</td><td>Vitrificateur, ou huile dure pour parquet</td></tr><tr><td>Jouet</td><td>Huile ou vernis conformes à la norme jouets (EN 71-3)</td></tr>
   <tr><td>Meuble de jardin</td><td>Huile spéciale extérieur ou saturateur</td></tr><tr><td>Terrasse</td><td>Saturateur, ou rien (le bois grisaille)</td></tr>
   <tr><td>Bardage, abri</td><td>Saturateur, lasure ou peinture</td></tr><tr><td>Volets, fenêtres, portes</td><td>Lasure ou peinture microporeuse</td></tr>
   <tr><td>Nichoir</td><td>Rien à l’intérieur, huile de lin dehors</td></tr></tbody></table></div>
+  <h2>Quelle méthode pour quel bois ?</h2><div class="tbl"><table><thead><tr><th>Bois</th><th>Ce qui lui va bien</th><th>Attention</th></tr></thead><tbody>
+  <tr><td>Chêne, frêne, châtaignier</td><td>Huile, cire, vernis, vitrificateur</td><td>Gros pores : bouche-pores pour un vernis lisse. Tanins : sous-couche anti-tanins sous une peinture ou une laque à l’eau.</td></tr>
+  <tr><td>Hêtre, érable, peuplier</td><td>Tout, et surtout laque et peinture (grain fin)</td><td>Le hêtre prend mal les teintes (taches) : faites un essai.</td></tr>
+  <tr><td>Noyer, merisier</td><td>Huile, gomme-laque, cire</td><td>Mettez la couleur en valeur, évitez les teintes.</td></tr>
+  <tr><td>Pin, sapin</td><td>Huile, vernis, peinture</td><td>Nœuds qui suintent : isolez-les avant peinture. Le pin jaunit en vieillissant. Les teintes « marbrent » : conditionneur ou bouche-pores avant.</td></tr>
+  <tr><td>Bois exotiques (teck, ipé)</td><td>Huile, saturateur</td><td>Bois gras : dégraissez à l’acétone. Le vernis y tient mal.</td></tr>
+  <tr><td>Douglas, mélèze (dehors)</td><td>Saturateur, lasure, ou rien</td><td>Sans finition, ils grisaillent sans pourrir.</td></tr>
+  <tr><td>MDF</td><td>Laque, peinture</td><td>Apprêt spécial MDF ; les chants boivent beaucoup : poncez-les et passez 2 couches d’apprêt.</td></tr>
+  <tr><td>Contreplaqué</td><td>Comme le bois de la face (huile, vernis, peinture)</td><td>Rebouchez et poncez les chants.</td></tr>
+  <tr><td>Mélaminé</td><td>Peinture ou laque</td><td>Dépolissez au grain 120 et passez un primaire d’accrochage, sinon tout s’écaille.</td></tr>
+  <tr><td>OSB</td><td>Vitrificateur (sol), peinture</td><td>Sous-couche avant peinture, sinon les copeaux se voient à travers.</td></tr></tbody></table></div>
+  <h3>Les outils</h3><ul><li>Pinceau plat de qualité (soies naturelles pour la glycéro, synthétiques pour l’eau).</li><li>Rouleau laqueur (mousse fine) pour laques et vernis sur les grandes surfaces.</li><li>Chiffon non pelucheux (coton) pour l’huile, la cire, la teinte.</li><li>Spalter (large pinceau plat) pour le vitrificateur.</li></ul>
   <h3>Les bonnes conditions</h3><ul><li>Entre 10 et 25 °C, pas en plein soleil, pas de pluie dans les heures qui suivent.</li><li>Bois sec (moins de 18 % d’humidité dehors).</li><li>Toujours un essai sur une chute ou un endroit caché.</li></ul></section>`;
 
 /* ============ PRISES ET ÉCLAIRAGE PAR PIÈCE ============ */
