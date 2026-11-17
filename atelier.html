@@ -330,6 +330,8 @@ i.k-te{background:repeating-linear-gradient(90deg,var(--c-te) 0 7px,var(--c-te2)
 .iso-v{fill:#e0312b;stroke:#fff;stroke-width:1.2;vector-effect:non-scaling-stroke}
 .iso-c{stroke:var(--ink);stroke-width:1.2;vector-effect:non-scaling-stroke;fill:none}
 .iso text{fill:var(--ink);font-family:var(--body);font-weight:700}
+.mv .mv-trait{fill:none;stroke:#2a1d12;stroke-width:1.4;vector-effect:non-scaling-stroke}
+.mv .mv-met{fill:#bfc5cc;stroke:#6b737c;stroke-width:1.2;vector-effect:non-scaling-stroke}
 .mv .mv-b{fill:#6b1f2a;fill-opacity:.85;stroke:#3d0f16;stroke-width:1;vector-effect:non-scaling-stroke}
 
 
@@ -1705,6 +1707,7 @@ const ICONES = {
   plomberie:'<path d="M6 16h20v9H6z"/><path d="M26 18h8a6 6 0 0 1 6 6v5"/><path d="M16 16v-6M10 10h12"/><path d="M40 35c-2.5 3.5-2.5 6 0 7 2.5-1 2.5-3.5 0-7z"/>',
   jardin:'<path d="M10 26h28l-4 16H14z"/><path d="M24 26V12"/><path d="M24 19c-7 0-10-4-10-10 7 0 10 4 10 10zM24 15c6 0 9-3 9-9-6 0-9 3-9 9z"/>',
   conversions:'<path d="M7 6v36h36z"/><path d="M14 23v12h12z"/><path d="M7 14h5M7 22h3M7 30h5"/>',
+  objets:'<path d="M6 20h22v20H6z"/><path d="M6 20l3-8h16l3 8M14 28h6"/><circle cx="36" cy="14" r="6"/><path d="M36 20v20M36 30h5M36 36h4"/>',
   divers:'<rect x="5" y="16" width="38" height="24" rx="2"/><path d="M17 16v-5h14v5M5 26h38M21 26v4h6v-4"/>',
 };
 const FAMILLES = [
@@ -1713,7 +1716,8 @@ const FAMILLES = [
   {id:'sols',       nom:'Sols',       desc:'Carrelage, parquet, terrasse', outils:['carrelage','parquet','plinthes','terrasse']},
   {id:'maconnerie', nom:'Maçonnerie', desc:'Béton, fondations, parpaings', outils:['beton','fondations','mortier','crepi','parpaings','pente']},
   {id:'menuiserie', nom:'Menuiserie', desc:'Étagères, meubles, tables, finitions',  outils:[{g:'Étagères',outils:['m-etagere','m-murale','m-echelle','m-angle']},{g:'Meubles',outils:['m-biblio','m-bas','m-placard']},{g:'Casiers',outils:['m-casier','m-bouteilles']},{g:'Tables',outils:['m-tbasse','m-tsalon','m-sellette']},'m-etabli','finitions']},
-  {id:'jardin',     nom:'Jardin',     desc:'Nichoir, jardinières, terrasse', outils:[{g:'Oiseaux',outils:['j-nichoir','j-mangeoire']},{g:'Jardinières',outils:['j-jardiniere','j-echelle','j-gradins']},'j-terrasse']},
+  {id:'jardin',     nom:'Jardin',     desc:'Nichoir, jardinières, table, compost', outils:[{g:'Oiseaux',outils:['j-nichoir','j-mangeoire']},{g:'Jardinières',outils:['j-jardiniere','j-echelle','j-gradins']},'j-terrasse','j-pique','j-compost']},
+  {id:'objets',     nom:'Petits objets', desc:'Plateau tournant, boîtes, porte-clés', outils:[{g:'Cuisine',outils:['o-plateau','o-planche']},{g:'Boîtes',outils:['o-bijoux','o-tiroir','o-caisse']},{g:'Au mur',outils:['o-cles','o-jmurale']}]},
   {id:'isolation',  nom:'Isolation',  desc:'Isolants, épaisseurs', outils:['isolants','epaisseurs','isol-qte']},
   {id:'plomberie',  nom:'Plomberie',  desc:'Tuyaux, équipements, évacuations', outils:[{g:'Alimentation',outils:['tuyaux','assemblages','equipements']},'evacuations']},
   {id:'chauffage',  nom:'Chauffage et ventilation', desc:'Puissance, appareils, VMC', outils:['ch-puissance','ch-appareils','ventilation']},
@@ -1757,7 +1761,7 @@ golist.addEventListener('click', ()=>go('liste'));
 
 /* Couleurs pastel des rubriques : [fond, fond au survol] */
 const PASTELS={chauffage:['#FCE0D6','#F7BFA9'],fixation:['#FBE3CF','#F5C6A0'],metal:['#E3E6EA','#C6CDD4'],bois:['#F3E3C3','#E9CE98'],murs:['#DCEBF7','#BBD6EE'],sols:['#E1F0DA','#C3E2B6'],maconnerie:['#F2DDD3','#E6BFAD'],
-  menuiserie:['#F7E5D3','#EFCBA7'],electricite:['#FFF2BD','#FFE48A'],conversions:['#D9F0EC','#B4E2DA'],jardin:['#EAF3CF','#D3E7A0'],plomberie:['#D2EAF6','#A8D3EC'],isolation:['#F7DDE4','#EFBDCB']};
+  menuiserie:['#F7E5D3','#EFCBA7'],electricite:['#FFF2BD','#FFE48A'],conversions:['#D9F0EC','#B4E2DA'],jardin:['#EAF3CF','#D3E7A0'],plomberie:['#D2EAF6','#A8D3EC'],isolation:['#F7DDE4','#EFBDCB'],objets:['#ECE3F6','#D7C5EE']};
 function showHome(){
   sub.textContent='Choisissez une rubrique, puis un sujet.';
   view.innerHTML=`<ul class="rubs">${FAMILLES.map(f=>{ const c=PASTELS[f.id]||['#ECEDEA','#DADCD7'];
@@ -3402,6 +3406,479 @@ function peqSchema(){ const it=[['arret','Arrêt',50,1],['clapet','Clapet',100,0
   return g; }
 
 FICHE_TOP.peq=()=>`<section class="card"><h2>L’arrivée d’eau, dans l’ordre</h2><p class="hint">Touchez un élément pour voir sa fiche plus bas.</p><div class="sch-fig"><svg class="pl-svg el-svg" viewBox="0 58 400 152" role="img" aria-label="Schéma de l’arrivée d’eau">${peqSchema()}</svg></div></section>`;
+
+
+/* ============ OUTILS COMMUNS : vue à plat automatique ============ */
+MAT.obj={nom:'bois',chant:false,fin:null,flex:80};
+function hull2(pts){ const p=[...pts].sort((a,b)=>a[0]-b[0]||a[1]-b[1]), cr=(o,a,b)=>(a[0]-o[0])*(b[1]-o[1])-(a[1]-o[1])*(b[0]-o[0]), lo=[], hi=[];
+  for(const q of p){ while(lo.length>=2&&cr(lo[lo.length-2],lo[lo.length-1],q)<=0) lo.pop(); lo.push(q); }
+  for(const q of p.reverse()){ while(hi.length>=2&&cr(hi[hi.length-2],hi[hi.length-1],q)<=0) hi.pop(); hi.push(q); }
+  return lo.slice(0,-1).concat(hi.slice(0,-1)); }
+/* ax : 'z' vue de face, 'x' vue de côté, 'y' vue de dessus */
+function vueAuto(pcs,ax,o={}){
+  const CL={p:'mv-p',m:'mv-m',o:'mv-b',met:'mv-met',f:'mv-p',d:'mv-m',ter:'mv-m',ca:'mv-p',v:'mv-met',nw:'mv-m',jm:'mv-m'};
+  const uv=ax==='z'?q=>[q[0],q[1]]:ax==='x'?q=>[q[2],q[1]]:q=>[q[0],-q[2]], dp=ax==='z'?2:ax==='x'?0:1;
+  const ps=pcs.filter(p=>p&&p.cl!=='mur'&&!(o.sauf||[]).includes(p.id)).sort((a,b)=>a.c[dp]-b.c[dp]);
+  const polys=ps.map(p=>({cl:CL[p.cl]||'mv-p',poly:(p.v2&&p.v2[ax])||hull2(p.faces.flat().map(uv))}));
+  const all=polys.flatMap(x=>x.poly), u0=Math.min(...all.map(q=>q[0])), v0=Math.min(...all.map(q=>q[1])), u1=Math.max(...all.map(q=>q[0])), v1=Math.max(...all.map(q=>q[1]));
+  const R=polys.map(x=>({cl:x.cl,poly:x.poly.map(q=>[q[0]-u0,q[1]-v0])}));
+  (o.traits||[]).forEach(t=>R.push({cl:'mv-trait',path:t(u0,v0)}));
+  return vue(u1-u0,v1-v0,R,{titre:o.titre,sol:o.sol??(ax!=='y'),cw:o.cw,ch:o.ch,lw:o.lw,lh:o.lh});
+}
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const disque=(id,cx,cz,r,y,h,cl,k=36)=>PY3(id,rond(cx,cz,r,r,k),y,h,cl);
+/* anneau (rebord rond) en segments */
+function anneau(pc,pref,cx,cz,r1,r2,y,h,cl,k=28){ const ids=[];
+  for(let i=0;i<k;i++){ const a=i/k*2*Math.PI, b=(i+1)/k*2*Math.PI, P=(r,t)=>[cx+r*Math.cos(t),cz+r*Math.sin(t)], id=pref+i;
+    pc[id]=PY3(id,[P(r2,a),P(r2,b),P(r1,b),P(r1,a)],y,h,cl); ids.push(id); } return ids; }
+function grouper(P,nom,sec,L,q,note,t='m'){ if(q<=0||L<=0) return; const x=P.find(p=>p.nom===nom&&Math.round(p.L)===Math.round(L)&&p.sec===sec); if(x) x.q+=q; else P.push({nom,q,L:Math.round(L),l:+String(sec).split('×')[1]||50,t,sec,note}); }
+
+/* ============ JARDIN : TABLE DE PIQUE-NIQUE ============ */
+TOOLS['j-pique']={nom:'Table de pique-nique et bancs',aide:'La table de jardin avec ses bancs : bancs attenants sur pieds en A, comme sur les aires de pique-nique, ou table et bancs séparés. Pour adultes ou pour enfants.',
+  pic:'<path d="M6 17h36M4 29h12M32 29h12"/><path d="M18 17l-8 25M30 17l8 25"/>',
+  champs:[S('mod','Modèle',[['attenant','Bancs attenants, pieds en A (comme sur la photo)'],['separe','Table et 2 bancs séparés'],['banc','Banc seul']],'attenant'),
+    S('pour','Pour',[['adulte','Adultes'],['enfant','Enfants (4 à 10 ans)']],'adulte'),N('L','Longueur','cm',180),
+    N('np','Nombre de planches du plateau','',5,{k:'mod',v:['attenant','separe']}),N('bl','Largeur des planches','cm',14.5),N('e','Épaisseur des planches','mm',34),BOIS_J],
+  calc(v){
+    const mod=v.mod, enf=v.pour==='enfant', e=Math.max(18,v.e), bl=Math.max(60,v.bl*10), j=6, L=clamp(v.L*10,600,3000);
+    const Ht=enf?560:750, Hs=enf?320:450, sb=45, sh=enf?70:95, sec=`${sb} × ${sh}`, psec=`${e} × ${Math.round(bl)}`;
+    const np=clamp(Math.round(v.np||5),3,8), Wt=np*bl+(np-1)*j, Ws=2*bl+j, gs=enf?70:100, xe=Math.round(Math.min(enf?180:280,L*0.15));
+    const pc={}, P=[], Q={}, notes=[], warns=[], info=[], st=[];
+    const planches=(pref,n,y,zc,w)=>Array.from({length:n},(_,i)=>{ const id=pref+i; pc[id]=B3(id,0,y,zc-w/2+i*(bl+j),L,e,bl,'p'); return id; });
+    const vis=`Vis inox ${visDe(Math.min(e,40))}`;
+    let D, big;
+    if(mod==='attenant'){
+      const Wtot=Wt+2*gs+2*Ws, Z0=Wtot/2, zb=Wt/2+gs+Ws/2-40, zt=Wt/2-20-60, hL=Ht-e, a=Math.atan((zb-zt)/hL), wh=sh/Math.cos(a);
+      const top=planches('pt',np,Ht-e,Z0,Wt), s1=planches('sa',2,Hs-e,Z0-Wt/2-gs-Ws/2,Ws), s2=planches('sb',2,Hs-e,Z0+Wt/2+gs+Ws/2,Ws);
+      const cad=[];
+      [[xe,xe+sb,'g'],[L-xe-sb,L-xe-2*sb,'d']].forEach(([xl,xt,c])=>{
+        [1,-1].forEach((s,k)=>{ const id='pd'+c+k; pc[id]=PX3(id,[[Z0+s*(zb-wh/2),0],[Z0+s*(zb+wh/2),0],[Z0+s*(zt+wh/2),hL],[Z0+s*(zt-wh/2),hL]],xl,sb,'m'); cad.push(id); });
+        pc['th'+c]=B3('th'+c,xt,Ht-e-sh,Z0-Wt/2+20,sb,sh,Wt-40,'m'); pc['tb'+c]=B3('tb'+c,xt,Hs-e-sh,0,sb,sh,Wtot,'m'); cad.push('th'+c,'tb'+c); });
+      pc.tc=B3('tc',L/2-sb/2,Ht-e-sh,Z0-Wt/2+20,sb,sh,Wt-40,'m');
+      const ech=[]; let Lb=0;
+      [[xe+2*sb,L/2-sb/2],[L-xe-2*sb,L/2+sb/2]].forEach(([x1,x2],i)=>{ const y1=Hs-e-sh/2; let hh=sh/2, y2=Ht-e-hh;
+        for(let it=0;it<3;it++){ const b=Math.atan2(y2-y1,Math.abs(x2-x1)); hh=sh/2/Math.cos(b); y2=Ht-e-hh; }
+        const b=Math.atan2(y2-y1,Math.abs(x2-x1)); Lb=Math.hypot(x2-x1,y2-y1)+sh*Math.tan(b);
+        const id='ec'+i; pc[id]=PZ3(id,[[x1,y1-hh],[x1,y1+hh],[x2,y2+hh],[x2,y2-hh]],Z0-sb/2,sb,'m'); ech.push(id); });
+      const Lg=hL/Math.cos(a)+sh*Math.tan(a), ang=fr(a*180/Math.PI,0);
+      P.push({nom:'Planche du plateau',q:np,L,l:bl,t:'m',sec:psec},{nom:'Planche des bancs',q:4,L,l:bl,t:'m',sec:psec});
+      P.push({nom:'Pied',q:4,L:Math.round(Lg),l:sh,t:'m',sec,note:`les deux bouts coupés à ${ang}° (parallèles au sol)`});
+      P.push({nom:'Traverse sous le plateau',q:3,L:Wt-40,l:sh,t:'m',sec,note:'dont une au milieu (taquet central)'});
+      P.push({nom:'Traverse des bancs',q:2,L:Math.round(Wtot),l:sh,t:'m',sec,note:'bouts arrondis ou coupés en biais'});
+      P.push({nom:'Écharpe (contreventement)',q:2,L:Math.round(Lb),l:sh,t:'m',sec,note:'bouts coupés d’aplomb'});
+      addQ(Q,`Boulons à tête ronde (japy) Ø 10 × ${lStd(2*sb+30)} mm, rondelles et écrous`,8); addQ(Q,'Vis inox 6 × 100 mm (écharpes)',4);
+      addQ(Q,vis,np*3*2+4*2*2);
+      st.push({t:'Les deux pieds en A',x:`À plat sur le sol, posez 2 pieds écartés de ${cm(2*zb)} cm en bas et ${cm(2*zt)} cm en haut. Posez dessus la traverse du plateau (en haut) et la traverse des bancs à ${cm(Hs-e)} cm du sol. Vérifiez l’équerrage, percez à Ø 10 et boulonnez : 1 boulon à chaque croisement. Faites le second pied à l’identique.`,add:cad,vis:[]},
+        {t:'Relier les pieds',x:`Redressez les deux pieds à ${cm(L-2*xe)} cm l’un de l’autre (extérieur). Vissez la première et la dernière planche du plateau, à fleur des bouts de traverse : la table tient debout.`,add:[top[0],top[np-1]],vis:[]},
+        {t:'Taquet central et écharpes',x:'Vissez la traverse du milieu sous le plateau. Posez les 2 écharpes, du milieu des traverses des bancs jusqu’au taquet central : elles empêchent la table de se balancer. 2 vis de 6 × 100 à chaque bout.',add:['tc',...ech],vis:[]},
+        {t:'Le plateau',x:`Vissez les autres planches du plateau, 6 mm d’écart (une cale), 2 vis par traverse, pré-percées et fraisées.`,add:top.slice(1,-1),vis:[]},
+        {t:'Les bancs',x:'Vissez les 2 planches de chaque banc sur les traverses des bancs, à 6 mm d’écart. Arrondissez les angles et poncez les arêtes : pas d’échardes pour les jambes !',add:[...s1,...s2],vis:[]});
+      D=Wtot; big=`Table de pique-nique ${fr(L/10,0)} cm · ${enf?'4 à 6 enfants':L>=2000?'8 personnes':'6 personnes'}`;
+      info.push(`Plateau ${cm(Wt)} cm de large, à ${cm(Ht)} cm du sol ; bancs à ${cm(Hs)} cm`,`Largeur hors tout : ${cm(Wtot)} cm`,`Pieds inclinés à ${ang}° par rapport à la verticale`);
+      if(L-2*xe-4*sb>1500) warns.push('Les bancs ne reposent que sur les deux pieds : au-delà de 1,50 m entre les pieds, ils fléchissent. Prenez des planches de 45 mm ou raccourcissez la table.');
+    } else {
+      /* pieds droits : 2 pieds + traverse haute + traverse basse par bout, entretoise au milieu */
+      const nP={}, cadre=(pref,zc,W,H,ids)=>{ const zl=W/2-40-sh/2, yb=enf?90:140;
+        [[xe,xe+sb],[L-xe-sb,L-xe-2*sb]].forEach(([xl,xt],c)=>{ [-1,1].forEach((s,k)=>{ const id=pref+'p'+c+k; pc[id]=B3(id,xl,0,zc+s*zl-sh/2,sb,H-e,sh,'m'); ids.push(id); });
+          pc[pref+'h'+c]=B3(pref+'h'+c,xt,H-e-sh,zc-W/2+20,sb,sh,W-40,'m'); pc[pref+'b'+c]=B3(pref+'b'+c,xt,yb,zc-W/2+20,sb,sh,W-40,'m'); ids.push(pref+'h'+c,pref+'b'+c); });
+        pc[pref+'en']=B3(pref+'en',xe+2*sb,yb,zc-sb/2,L-2*xe-4*sb,sh,sb,'m'); ids.push(pref+'en');
+        const k=H>500?'t':'b'; nP[k]=nP[k]||{H,W,n:0}; nP[k].n++; };
+      const fT=[], fB=[], plT=[], plB=[]; let Wtot, Z0;
+      if(mod==='separe'){ const gap=enf?250:330; Wtot=Wt+2*gap+2*Ws; Z0=Wtot/2;
+        cadre('t',Z0,Wt,Ht,fT); plT.push(...planches('pt',np,Ht-e,Z0,Wt));
+        cadre('a',Ws/2,Ws,Hs,fB); cadre('b',Wtot-Ws/2,Ws,Hs,fB); plB.push(...planches('sa',2,Hs-e,Ws/2,Ws),...planches('sb',2,Hs-e,Wtot-Ws/2,Ws));
+        P.push({nom:'Planche du plateau',q:np,L,l:bl,t:'m',sec:psec});
+      } else { Wtot=Ws; Z0=Ws/2; cadre('a',Z0,Ws,Hs,fB); plB.push(...planches('sa',2,Hs-e,Z0,Ws)); }
+      const nb=mod==='separe'?2:1;
+      P.push({nom:'Planche d’assise',q:2*nb,L,l:bl,t:'m',sec:psec});
+      if(nP.t) P.push({nom:'Pied de table',q:4,L:Ht-e,l:sh,t:'m',sec},{nom:'Traverse de table',q:4,L:Wt-40,l:sh,t:'m',sec,note:'2 en haut, 2 en bas'},{nom:'Entretoise de table',q:1,L:L-2*xe-4*sb,l:sh,t:'m',sec});
+      P.push({nom:'Pied de banc',q:4*nb,L:Hs-e,l:sh,t:'m',sec},{nom:'Traverse de banc',q:4*nb,L:Ws-40,l:sh,t:'m',sec,note:'2 en haut, 2 en bas'},{nom:'Entretoise de banc',q:nb,L:L-2*xe-4*sb,l:sh,t:'m',sec});
+      const ncad=(nP.t?1:0)+nb;
+      addQ(Q,`Boulons à tête ronde (japy) Ø 10 × ${lStd(2*sb+30)} mm, rondelles et écrous`,ncad*8); addQ(Q,'Vis inox 6 × 100 mm (entretoises)',ncad*4);
+      addQ(Q,vis,(nP.t?np*2*2:0)+nb*2*2*2);
+      st.push({t:'Les cadres des bouts',x:`Pour chaque bout : 2 pieds, une traverse en haut et une en bas, à plat sur le sol. Vérifiez l’équerre (diagonales égales), percez à Ø 10 et boulonnez : 2 boulons par pied.`,add:[...fT,...fB].filter(id=>!id.endsWith('en')),vis:[]},
+        {t:'Les entretoises',x:'Redressez les cadres et reliez-les par l’entretoise du bas, vissée au milieu des traverses basses (2 vis de 6 × 100 à chaque bout).',add:[...fT,...fB].filter(id=>id.endsWith('en')),vis:[]});
+      if(plT.length) st.push({t:'Le plateau',x:'Vissez les planches du plateau sur les traverses hautes, 6 mm d’écart, 2 vis par traverse, pré-percées et fraisées.',add:plT,vis:[]});
+      st.push({t:mod==='banc'?'L’assise':'Les assises des bancs',x:'Vissez les 2 planches de chaque assise, 6 mm d’écart. Arrondissez les angles et poncez les arêtes.',add:plB,vis:[]});
+      D=Wtot; big=mod==='banc'?`Banc ${fr(L/10,0)} cm`:`Table ${fr(L/10,0)} cm et 2 bancs`;
+      info.push(...(mod==='separe'?[`Table : plateau ${cm(Wt)} cm de large, à ${cm(Ht)} cm du sol`]:[]),`Banc : assise ${cm(Ws)} cm de large, à ${cm(Hs)} cm du sol`);
+      if(L-2*xe-4*sb>1500) warns.push('Au-delà de 1,50 m entre les pieds, les assises fléchissent : prenez des planches de 45 mm, ou ajoutez un cadre au milieu.');
+    }
+    if(e<27) warns.push('Moins de 27 mm, c’est trop fin pour s’asseoir dessus : prenez au moins 27 mm, 34 mm c’est mieux.');
+    info.push(...barres(P,Math.max(2400,Math.ceil(L/100)*100)));
+    notes.push({pin:'Pin traité autoclave classe 4 : solide et bon marché. Poncez-le bien, il donne facilement des échardes.',douglas:'Douglas ou mélèze : durable dehors sans traitement, il grisaille joliment. Un saturateur garde sa couleur.',robinier:'Robinier (acacia) : le plus durable, mais dur à visser : avant-trou obligatoire.'}[v.bois]||'',`Places : comptez 60 cm par personne${mod==='attenant'?' sur chaque banc':''}.`,
+      'Boulons plutôt que vis pour la structure : on peut les resserrer chaque printemps, quand le bois a joué.',
+      'Posez les pieds sur des cales ou des pavés, pas directement sur la terre : le bout des pieds pourrit en premier.',
+      'Cassez toutes les arêtes (rabot, ponceuse) et coupez les coins du plateau en biais ou arrondis.',
+      mod==='attenant'?'Une table de pique-nique de 1,80 m pèse 60 à 80 kg : il faut être deux pour la déplacer.':'');
+    const out=meuble({...v,e,mat:'ext'},{m3d:{pc,st,cotes:{W:L,H:mod==='banc'?Hs:Ht,D}},titre:mod==='banc'?'Banc':'Table de jardin',pieces:P,q:Q,notes:notes.filter(Boolean),warns,info,ep:-1,
+      vue:vueAuto(Object.values(pc),'x',{titre:'Vue de bout',lw:cm(D)+' cm'})});
+    return {...out,big};
+  }};
+
+/* ============ JARDIN : BAC À COMPOST ============ */
+function palette3(pc,pref,o,ax,flip){ const ids=[], T=22, B=78, put=(id,a,y,t,la,h,ep)=>{ // a : position le long ; t : position dans l'épaisseur
+    const tt=flip?122-t-ep:t; pc[id]=ax==='x'?B3(id,o[0]+a,y,o[1]+tt,la,h,ep,id.includes('l')?'p':'m'):B3(id,o[0]+tt,y,o[1]+a,ep,h,la,id.includes('l')?'p':'m'); ids.push(id); };
+  const bw=[145,100,145,100,145], g=(800-635)/4; let y=0;
+  bw.forEach((w,i)=>{ put(pref+'l'+i,0,y,0,1200,w,T); y+=w+g; });
+  [0,550,1100].forEach((a,i)=>put(pref+'b'+i,a,0,T,100,800,B));
+  [0,350,700].forEach((yy,i)=>put(pref+'d'+i,0,yy,T+B,1200,100,T));
+  return ids; }
+TOOLS['j-compost']={nom:'Bac à compost',aide:'Un composteur en bois à 1, 2 ou 3 compartiments : en planches, avec une façade à lames amovibles pour vider le bac par le bas, ou en palettes de récupération.',
+  pic:'<path d="M6 18h36v24H6z"/><path d="M6 24h36M6 30h36M6 36h36M12 18v24M36 18v24"/><path d="M6 18l4-9h28l4 9"/>',
+  champs:[S('mod','Modèle',[['lames','En planches, façade à lames amovibles (comme sur la photo)'],['fixe','En planches, façade vissée'],['palettes','En palettes de récupération']],'lames'),
+    N('n','Nombre de compartiments (1 à 3)','',1),
+    N('L','Largeur d’un compartiment','cm',100,{k:'mod',v:['lames','fixe']}),N('P','Profondeur','cm',100,{k:'mod',v:['lames','fixe']}),N('H','Hauteur','cm',90,{k:'mod',v:['lames','fixe']}),
+    N('bl','Largeur des planches','cm',9.5,{k:'mod',v:['lames','fixe']}),N('e','Épaisseur des planches','mm',22,{k:'mod',v:['lames','fixe']}),
+    C('couv','Couvercle grillagé',true,{k:'mod',v:['lames','fixe']}),{...BOIS_J,si:{k:'mod',v:['lames','fixe']}}],
+  calc(v){
+    const n=clamp(Math.round(v.n),1,3), pc={}, P=[], Q={}, st=[], notes=[], warns=[], info=[];
+    notes.push('Posez le bac directement sur la terre, sans fond : les vers et les petites bêtes du sol montent faire le travail.',
+      'Alternez les couches : déchets verts humides (épluchures, tontes) et déchets bruns secs (feuilles mortes, brindilles, carton brun). Environ moitié-moitié.',
+      'Retournez ou aérez le tas tous les 1 à 2 mois. Il doit rester humide comme une éponge essorée.',
+      'Pas de viande, de poisson, de produits laitiers, ni de plantes malades ou de mauvaises herbes montées en graines.',
+      n>1?'Avec plusieurs compartiments : on remplit le premier, puis on le retourne dans le suivant pour qu’il mûrisse pendant qu’on remplit à nouveau le premier.':'Le compost est mûr en 6 à 12 mois : brun foncé, il sent le sous-bois.',
+      'Placez-le à mi-ombre, à l’abri du vent, et pas collé à la clôture du voisin.');
+    if(v.mod==='palettes'){
+      const W=n*1322+122, ids={c:[],f:[],a:[]};
+      for(let k=0;k<=n;k++) ids.c.push(...palette3(pc,'c'+k,[k*1322,0],'z',k>0));
+      for(let k=0;k<n;k++){ ids.f.push(...palette3(pc,'f'+k,[122+k*1322,0],'x',false)); ids.a.push(...palette3(pc,'a'+k,[122+k*1322,1078],'x',true)); }
+      const np=3*n+1;
+      Q[`Palettes de 120 × 80 cm, marquées « HT »`]=np; addQ(Q,'Équerres métalliques 100 mm (ou fil de fer galvanisé) et leurs vis',(n+1)*4);
+      addQ(Q,'Crochets ou loquets pour la façade (pour l’ouvrir)',2*n); addQ(Q,'Piquets de bois ou fers à béton, plantés au pied des angles',2*(n+1));
+      st.push({t:'Le fond et les côtés',x:`Plantez les palettes de côté debout, sur le grand côté, à 1,20 m les unes des autres. Posez la palette du fond entre elles et fixez-la avec 2 équerres à chaque angle. Un piquet planté contre chaque angle empêche le tout de bouger.`,add:[...ids.c,...ids.f],vis:[]},
+        {t:'La façade',x:'Posez la palette de façade et tenez-la avec des crochets ou du fil de fer : elle s’ouvre pour retourner et vider le compost.',add:ids.a,vis:[]});
+      notes.unshift('Choisissez des palettes marquées « HT » (traitement thermique). Refusez celles marquées « MB » (traitées au bromure de méthyle, un produit toxique) et les palettes tachées d’huile ou de peinture.');
+      const out=meuble({...v,e:22,mat:'ext'},{m3d:{pc,st,cotes:{W,H:800,D:1200}},titre:'Bac à compost',pieces:[{nom:'Palette 120 × 80 cm',q:np,L:1200,l:800,t:'m',sec:'palette',note:'posée sur le grand côté'}],q:Q,notes,warns,info:[`${n} compartiment${n>1?'s':''} de 1,20 × 0,96 m, 80 cm de haut`,`Volume : environ ${fr(n*1.2*0.96*0.8,1)} m³`],ep:-1,vis:false,
+        vue:vueAuto(Object.values(pc),'z',{titre:'Vue de face'})});
+      return {...out,big:`Bac à compost en palettes · ${np} palettes`};
+    }
+    const Lc=Math.max(500,v.L*10), Pm=Math.max(500,v.P*10), H=Math.max(400,v.H*10), bl=Math.max(50,v.bl*10), e=Math.max(15,v.e), po=70, g=20, amov=v.mod==='lames';
+    const nr=Math.max(2,Math.floor((H+g)/(bl+g))), W=n*Lc+po, cx=k=>po/2+k*Lc, Y=i=>i*(bl+g), lsec=`${e} × ${Math.round(bl)}`;
+    const ids={po:[],fd:[],co:[],cl:[],fa:[],gl:[],cv:[]};
+    for(let k=0;k<=n;k++) [0,Pm-po].forEach((z,i)=>{ const id='po'+k+i; pc[id]=B3(id,cx(k)-po/2,0,z,po,H,po,'m'); ids.po.push(id); });
+    for(let i=0;i<nr;i++){
+      for(let k=0;k<n;k++){ const x0=k===0?0:cx(k), x1=k===n-1?W:cx(k+1)-3, id='fd'+k+'_'+i; pc[id]=B3(id,x0,Y(i),-e,x1-x0,bl,e,'p'); ids.fd.push(id); grouper(P,'Planche du fond',lsec,x1-x0,1); }
+      [[-e,'g'],[W,'d']].forEach(([x,c])=>{ const id='co'+c+i; pc[id]=B3(id,x,Y(i),-e,e,bl,Pm+e,'p'); ids.co.push(id); }); grouper(P,'Planche de côté',lsec,Pm+e,2);
+      for(let k=1;k<n;k++){ const id='cl'+k+'_'+i; pc[id]=B3(id,cx(k)+po/2,Y(i),0,e,bl,Pm,'p'); ids.cl.push(id); grouper(P,'Planche de séparation',lsec,Pm,1); }
+      for(let k=0;k<n;k++){ const x0=amov?cx(k)+po/2-20:k===0?0:cx(k), x1=amov?cx(k+1)-po/2+20:k===n-1?W:cx(k+1)-3, id='fa'+k+'_'+i;
+        pc[id]=B3(id,x0+(amov?2:0),Y(i),Pm,x1-x0-(amov?4:0),bl,e,'p'); ids.fa.push(id); grouper(P,amov?'Lame de façade amovible':'Planche de façade',lsec,x1-x0-(amov?4:0),1); }
+    }
+    if(amov) for(let k=0;k<=n;k++){ const a=k===0?0:cx(k)-po/2+20, b=k===n?W:cx(k)+po/2-20, idc='cs'+k, idp='cp'+k;
+      pc[idc]=B3(idc,a,0,Pm,b-a,H,e+3,'m'); pc[idp]=B3(idp,cx(k)-po/2+(k===0?0:0),0,Pm+e+3,k===0||k===n?po:po,H,22,'m'); ids.gl.push(idc,idp);
+      grouper(P,'Cale de glissière',`${e+3} × ${Math.round(b-a)}`,H,1,'entre le poteau et le couvre-joint'); grouper(P,'Couvre-joint de glissière','22 × 70',H,1,'tient les bouts des lames'); }
+    P.unshift({nom:'Poteau',q:2*(n+1),L:H,l:po,t:'m',sec:'70 × 70'});
+    const nv=nr*(4*n+8+4*(n-1)+(amov?0:4*n));
+    addQ(Q,`Vis inox ${visDe(e)}`,nv); if(amov) addQ(Q,'Vis inox 5 × 70 mm (glissières)',(n+1)*8);
+    if(v.couv){ const fz=-e, fd=Pm+e+(amov?e+25:e);
+      for(let k=0;k<n;k++){ const x0=k===0?0:cx(k)+2, x1=k===n-1?W:cx(k+1)-2, w=x1-x0, p='cv'+k;
+        pc[p+'a']=B3(p+'a',x0,H,fz,w,22,70,'m'); pc[p+'b']=B3(p+'b',x0,H,fz+fd-70,w,22,70,'m');
+        pc[p+'c']=B3(p+'c',x0,H,fz+70,70,22,fd-140,'m'); pc[p+'d']=B3(p+'d',x1-70,H,fz+70,70,22,fd-140,'m'); ids.cv.push(p+'a',p+'b',p+'c',p+'d');
+        const nx=Math.max(2,Math.round(w/120)), nz=Math.max(2,Math.round(fd/120));
+        for(let i=1;i<nx;i++){ const id=p+'x'+i; pc[id]=B3(id,x0+i*w/nx,H+22,fz,3,2,fd,'met'); ids.cv.push(id); }
+        for(let i=1;i<nz;i++){ const id=p+'z'+i; pc[id]=B3(id,x0,H+22,fz+i*fd/nz,w,2,3,'met'); ids.cv.push(id); }
+        grouper(P,'Cadre du couvercle','22 × 70',w,2); grouper(P,'Cadre du couvercle','22 × 70',fd-140,2); }
+      Q['Grillage galvanisé maille 13 mm (contre les rongeurs)']=`${fr(n*(Lc+20)*(Pm+2*e+25)/1e6*1.1,1)} m²`; addQ(Q,'Agrafes ou cavaliers pour le grillage (boîte)',1);
+      addQ(Q,'Charnières inox 50 mm et leurs vis',2*n); addQ(Q,'Poignées',n); }
+    st.push({t:'Les poteaux et le fond',x:`Plantez ou posez les ${2*(n+1)} poteaux d’aplomb, sur un sol nivelé. Vissez les planches du fond par l’arrière, en commençant par le bas : 2 cm d’écart entre les planches pour l’air (une cale). 2 vis à chaque poteau.`,add:[...ids.po,...ids.fd],vis:[]},
+      {t:'Les côtés',x:'Vissez les planches des côtés de la même façon, 2 cm d’écart, en recouvrant le bout des planches du fond.',add:ids.co,vis:[]});
+    if(ids.cl.length) st.push({t:'Les séparations',x:'Vissez les planches de séparation sur les poteaux du milieu, du même côté partout.',add:ids.cl,vis:[]});
+    if(amov) st.push({t:'Les glissières',x:'Sur l’avant de chaque poteau, vissez une cale un peu plus épaisse que les lames (3 mm de plus), puis un couvre-joint de 7 cm par-dessus : il reste de chaque côté une fente où glissent les bouts des lames.',add:ids.gl,vis:[]});
+    st.push({t:amov?'Les lames de façade':'La façade',x:amov?'Glissez les lames de façade par le haut, l’une sur l’autre. Pour vider le compost mûr du bas, on retire seulement les lames du haut ou toutes les lames, sans démonter le bac.':'Vissez les planches de façade comme celles du fond, 2 cm d’écart.',add:ids.fa,vis:[]});
+    if(ids.cv.length) st.push({t:'Le couvercle',x:'Assemblez le cadre du couvercle à plat (2 vis par angle), agrafez le grillage dessous, puis fixez le couvercle sur le fond avec 2 charnières. Il garde l’humidité, la chaleur et éloigne les rongeurs et les oiseaux.',add:ids.cv,vis:[]});
+    if(H>1200) warns.push('Plus d’1,20 m de haut, le tas devient difficile à retourner : 80 cm à 1 m, c’est l’idéal.');
+    if(Lc*Pm<600*600) warns.push('Moins de 60 × 60 cm, le tas ne chauffe pas assez pour bien composter.');
+    const vol=n*Lc*Pm*H/1e9;
+    info.push(`${n} compartiment${n>1?'s':''} · volume ${fr(vol,1)} m³ (${fr(vol*1000,0)} L)`,`${nr} planches par rangée, 2 cm d’écart pour l’air`,...barres(P));
+    notes.unshift({pin:'Pin traité autoclave classe 4 : fait pour le contact avec la terre humide, il dure 10 ans et plus.',douglas:'Douglas ou mélèze : sans traitement, il dure moins longtemps au contact de la terre ; posez les poteaux sur des pavés.',robinier:'Robinier (acacia) : le plus durable, même au contact de la terre, sans aucun traitement.'}[v.bois]||'');
+    const out=meuble({...v,e,mat:'ext'},{m3d:{pc,st,cotes:{W,H,D:Pm}},titre:'Bac à compost',pieces:P,q:Q,notes,warns,info,ep:-1,
+      vue:vueAuto(Object.values(pc),'z',{titre:'Vue de face',sauf:ids.cv})});
+    return {...out,big:`Bac à compost ${n>1?n+' compartiments':''} · ${fr(vol*1000,0)} L`.replace('  ',' ')};
+  }};
+
+
+/* ============ PETITS OBJETS ============ */
+TEINTE.nw=[22,38,34];
+const ESS_O={hetre:'Hêtre',erable:'Érable',noyer:'Noyer',merisier:'Merisier',chene:'Chêne',olivier:'Olivier',pin:'Pin ou peuplier',cp:'Contreplaqué bouleau',bambou:'Bambou (panneau)'};
+const essO=(def,...k)=>S('ess','Bois',k.map(x=>[x,ESS_O[x]]),def);
+const FIN_O={hetre:'huile',erable:'huile',noyer:'huile',merisier:'cire',chene:'cire',olivier:'huile',pin:'vernis',cp:'vernis',bambou:'huile'};
+function finO(Q,ess,surf,alim){ if(alim||FIN_O[ess]==='huile') Q[alim?'Huile alimentaire (huile de paraffine ou huile de lin alimentaire)':'Huile pour bois (dure)']='1 petit flacon';
+  else if(FIN_O[ess]==='cire') Q['Cire d’abeille ou vernis mat']='1 petite boîte'; else Q['Vernis incolore mat ou satiné']=`${fr(Math.max(0.1,surf*2/12),2)} L`;
+  Q['Papier de verre grain 120, 180 et 240']='1 feuille de chaque'; }
+/* profil du haut d'une planchette : x0, y0, largeur, hauteur totale */
+function profil(f,x0,y0,w,h){ const a=Math.min(w*0.5,h*0.3);
+  if(f==='chat') return [[x0,y0],[x0+w,y0],[x0+w,y0+h],[x0+w*0.7,y0+h-a*0.75],[x0+w*0.3,y0+h-a*0.75],[x0,y0+h]];
+  if(f==='pointe') return [[x0,y0],[x0+w,y0],[x0+w,y0+h-a],[x0+w/2,y0+h],[x0,y0+h-a]];
+  if(f==='rond'){ const r=w/2, c=[x0+r,y0+h-r]; return [[x0,y0],[x0+w,y0],...Array.from({length:11},(_,i)=>{ const t=i/10*Math.PI; return [c[0]+r*Math.cos(t),c[1]+r*Math.sin(t)]; }),[x0,y0]].slice(0,-1); }
+  return [[x0,y0],[x0+w,y0],[x0+w,y0+h],[x0,y0+h]]; }
+const fendu=(cx,cy,r)=>Array.from({length:7},(_,i)=>{ const t=Math.PI+i/6*Math.PI; return [cx+r*Math.cos(t),cy+r*0.35*Math.sin(t)]; });
+
+TOOLS['o-plateau']={nom:'Plateau tournant',aide:'Un plateau rond qui tourne sur un roulement à billes : sur la table, dans le placard à épices ou le frigo. Simple, avec rebord, à cases ou à deux étages.',
+  pic:'<ellipse cx="24" cy="20" rx="19" ry="7"/><path d="M5 20v4c0 4 9 7 19 7s19-3 19-7v-4"/><path d="M17 31v6h14v-6"/>',
+  champs:[S('mod','Modèle',[['plat','Plateau simple'],['rebord','Avec rebord'],['cases','Avec rebord et cases (épices, comme sur la photo)'],['deux','Deux étages']],'cases'),
+    N('D','Diamètre','cm',35),N('e','Épaisseur des planches','mm',18),N('nc','Nombre de cases (2 à 6)','',4,{k:'mod',v:['cases']}),essO('hetre','hetre','erable','chene','bambou','cp')],
+  calc(v){
+    const D=clamp(v.D*10,150,700), e=clamp(v.e,10,30), R=D/2, mod=v.mod, pc={}, P=[], Q={}, st=[], notes=[], warns=[], info=[];
+    const rb=D<=300?100:D<=450?150:D<=600?200:300, Db=Math.max(rb+50,Math.round(D*0.5)), hR=8, y0=e+hR+e;
+    const nco=mod==='plat'?0:Math.max(1,Math.round(36/e)), hr=nco*e, rw=Math.max(15,Math.min(25,e));
+    pc.ba=disque('ba',R,R,Db/2,0,e,'p'); pc.rl=PY3('rl',[[R-rb/2,R-rb/2],[R+rb/2,R-rb/2],[R+rb/2,R+rb/2],[R-rb/2,R+rb/2]],e,hR,'met'); pc.pl=disque('pl',R,R,R,e+hR,e,'p');
+    pc.pl.sur=['rl','ba']; pc.rl.sur=['ba'];
+    P.push({nom:'Plateau',q:1,L:D,l:D,e,t:'p',note:`disque Ø ${cm(D)} cm`},{nom:'Socle',q:1,L:Db,l:Db,e,t:'p',note:`disque Ø ${cm(Db)} cm, trou Ø 15 mm à 1 cm d’un coin du roulement`});
+    const rbIds=nco?anneau(pc,'rb',R,R,R-rw,R,y0,hr,'p',40):[], cl=[];
+    if(nco) P.push({nom:'Couronne du rebord',q:nco,L:D,l:D,e,t:'p',note:`anneau Ø ${cm(D)} cm extérieur, ${cm(D-2*rw)} cm intérieur (le milieu sert pour un autre plateau)`});
+    if(mod==='cases'){ const nc=clamp(Math.round(v.nc),2,6), ec=8, Ri=R-rw, hc=hr-5;
+      if(nc===2||nc===4){ const k=nc/2; for(let i=0;i<k;i++){ const a=i*Math.PI/2, c=Math.cos(a), s=Math.sin(a), u=Ri, w=ec/2, id='cl'+i;
+          pc[id]=PY3(id,[[R-u*c+w*s,R-u*s-w*c],[R+u*c+w*s,R+u*s-w*c],[R+u*c-w*s,R+u*s+w*c],[R-u*c-w*s,R-u*s+w*c]],y0,hc,'p'); cl.push(id); }
+        P.push({nom:'Cloison',q:k,L:Math.round(2*Ri),l:hc,e:ec,t:'p',note:k>1?'entaillées à mi-hauteur pour se croiser':''}); }
+      else { pc.hub=disque('hub',R,R,25,y0,hc,'p'); cl.push('hub');
+        for(let i=0;i<nc;i++){ const a=i*2*Math.PI/nc, c=Math.cos(a), s=Math.sin(a), w=ec/2, r0=25, r1=Ri, id='cl'+i;
+          pc[id]=PY3(id,[[R+r0*c+w*s,R+r0*s-w*c],[R+r1*c+w*s,R+r1*s-w*c],[R+r1*c-w*s,R+r1*s+w*c],[R+r0*c-w*s,R+r0*s+w*c]],y0,hc,'p'); cl.push(id); }
+        P.push({nom:'Cloison',q:nc,L:Math.round(Ri-25),l:hc,e:ec,t:'p'},{nom:'Moyeu central',q:1,L:hc,l:50,t:'m',sec:'rondin Ø 50'}); }
+      info.push(`${nc} cases de ${cm(hc)} cm de haut`); }
+    const et=[];
+    if(mod==='deux'){ const D2=Math.round(D*0.7), R2=D2/2, hcol=140, y2=y0+hcol;
+      pc.col=disque('col',R,R,20,y0,hcol,'m',16); pc.p2=disque('p2',R,R,R2,y2,e,'p'); et.push('col','p2'); et.push(...anneau(pc,'r2',R,R,R2-rw,R2,y2+e,hr,'p'));
+      P.push({nom:'Plateau du haut',q:1,L:D2,l:D2,e,t:'p',note:`disque Ø ${cm(D2)} cm`},{nom:'Couronne du rebord (haut)',q:nco,L:D2,l:D2,e,t:'p'},{nom:'Colonne',q:1,L:hcol,l:40,t:'m',sec:'tourillon Ø 40'});
+      addQ(Q,'Vis à bois 5 × 50 mm (colonne)',2); }
+    addQ(Q,`Roulement à billes pour plateau tournant, ${rb} mm`,1); addQ(Q,'Vis à bois 3,5 × 16 mm',8); addQ(Q,'Patins feutre autocollants Ø 20 mm',4);
+    if(nco||cl.length) addQ(Q,'Colle à bois vinylique (flacon)',1);
+    finO(Q,v.ess,D*D/1e6*2,mod!=='plat'||true);
+    st.push({t:'Les disques',x:`Tracez les cercles au compas (une pointe, une ficelle et un crayon font l’affaire). Découpez à la scie sauteuse un peu à l’extérieur du trait, puis poncez jusqu’au trait. Le plateau fait Ø ${cm(D)} cm, le socle Ø ${cm(Db)} cm.`,add:['ba'],vis:[]},
+      {t:'Le roulement',x:`Centrez le roulement sur le socle et vissez-le (4 vis). Percez dans le socle un trou de Ø 15 mm en face d’un trou de la partie haute du roulement : c’est par là qu’on vissera le plateau. Posez le plateau dessus, centrez-le, et vissez en tournant le plateau pour présenter chaque trou devant l’ouverture.`,add:['rl','pl'],vis:[]});
+    if(nco) st.push({t:'Le rebord',x:`Découpez ${nco>1?nco+' couronnes':'une couronne'} de ${cm(rw)} cm de large : percez un trou dans le disque intérieur pour passer la lame de scie sauteuse. ${nco>1?'Collez-les l’une sur l’autre, puis ':''}Collez le rebord sur le plateau, serré avec des poids ou des serre-joints. Poncez l’ensemble pour effacer les joints.`,add:rbIds,vis:[]});
+    if(cl.length) st.push({t:'Les cases',x:cl.includes('hub')?'Collez les cloisons autour du moyeu central (un bout de rondin), à intervalles égaux, puis l’ensemble sur le plateau.':'Entaillez les cloisons à mi-hauteur pour les croiser (une par le haut, l’autre par le bas), puis collez-les sur le plateau, contre le rebord.',add:cl,vis:[]});
+    if(et.length) st.push({t:'L’étage',x:'Vissez la colonne par-dessous à travers le plateau du bas et le plateau du haut (vis de 5 × 50, avant-trou), avec de la colle. Collez le rebord du haut.',add:et,vis:[]});
+    st.push({t:'Finition',x:'Poncez au grain 120 puis 180 et 240, en cassant toutes les arêtes. Passez l’huile alimentaire, laissez pénétrer 20 minutes, essuyez l’excédent. Deux couches à un jour d’intervalle. Collez les patins feutre sous le socle.',add:[],vis:[]});
+    notes.push('Le roulement se trouve en magasin de bricolage ou en ligne (« roulement plateau tournant »). Prenez-le au moins de la taille de la moitié du diamètre du plateau.',
+      'Pour un cercle bien rond : clouez une planchette sous la défonceuse, avec un clou au centre du disque, et faites le tour (gabarit compas).',
+      v.ess==='cp'?'Contreplaqué : les chants feuilletés sont jolis une fois poncés et huilés.':'Un panneau de bois massif collé (lamellé-collé) du magasin évite tout assemblage.');
+    const H=mod==='deux'?y0+140+e+hr:y0+hr;
+    const out=meuble({...v,e,mat:'obj'},{m3d:{pc,st,cotes:{W:D,H,D}},titre:'Plateau tournant',pieces:P,q:Q,notes,warns,info:[`Hauteur : ${cm(H)} cm`,...info],vis:false,
+      vue:vueAuto(Object.values(pc),'y',{titre:'Vu de dessus',lw:cm(D)+' cm',lh:cm(D)+' cm',sauf:['rl']})});
+    return {...out,big:`Plateau tournant Ø ${cm(D)} cm`};
+  }};
+
+TOOLS['o-planche']={nom:'Planche à découper, de service',aide:'Une planche en bois dur, d’une seule pièce ou en baguettes collées de deux bois qui alternent. Rectangulaire, avec poignée ou ronde (planche de service, dessous de plat).',
+  pic:'<rect x="5" y="14" width="30" height="22" rx="3"/><path d="M35 22h6a3 3 0 0 1 0 6h-6"/><path d="M12 14v22M19 14v22M26 14v22"/>',
+  champs:[S('forme','Forme',[['rect','Rectangulaire'],['poignee','Avec poignée'],['ronde','Ronde (planche de service, dessous de plat)']],'rect'),
+    N('L','Longueur (ou diamètre)','cm',40),N('l','Largeur','cm',25,{k:'forme',v:['rect','poignee']}),N('e','Épaisseur','mm',25),
+    S('lam','Fabrication',[['lam','Baguettes collées, deux bois qui alternent'],['massif','Une seule planche']],'lam'),N('bw','Largeur des baguettes','cm',4,{k:'lam',v:['lam']}),
+    essO('hetre','hetre','erable','noyer','merisier','olivier'),C('jus','Rigole à jus (pour la viande)',false,{k:'forme',v:['rect','poignee']})],
+  calc(v){
+    const ronde=v.forme==='ronde', L=clamp(v.L*10,150,800), l=ronde?L:clamp(v.l*10,100,600), e=clamp(v.e,12,50), lam=v.lam==='lam', bw=clamp(v.bw*10,20,80);
+    const pc={}, P=[], Q={}, st=[], notes=[], warns=[], ids=[];
+    const nb=lam?Math.ceil(l/bw):1, w=l/nb;
+    for(let i=0;i<nb;i++){ const z0=i*w, z1=z0+w, id='b'+i, cl=lam&&i%2?'nw':'p';
+      if(ronde){ const r=L/2, pts=[], N=12; for(let k=0;k<=N;k++){ const z=z0+(z1-z0)*k/N, dz=z-r; pts.push([r-Math.sqrt(Math.max(0,r*r-dz*dz)),z]); }
+        const rp=pts.map(([x,z])=>[L-x,z]).reverse(); pc[id]=PY3(id,[...pts,...rp],0,e,cl); }
+      else pc[id]=B3(id,0,0,z0,L,e,w,cl); ids.push(id); }
+    let Lt=L;
+    if(v.forme==='poignee'){ const hw=Math.min(70,l*0.35), c=l/2, pl=110; Lt=L+pl;
+      pc.po=PY3('po',[[L,c-hw/2],[L+pl-hw/2,c-hw/2],...Array.from({length:9},(_,k)=>{ const t=-Math.PI/2+k/8*Math.PI; return [L+pl-hw/2+hw/2*Math.cos(t),c+hw/2*Math.sin(t)]; }),[L,c+hw/2]],0,e,'p');
+      pc.tr=disque('tr',L+pl-hw/2,c,11,e,0.5,'o',14); pc.tr.sur=['po']; ids.push('po','tr'); }
+    const rg=[];
+    if(v.jus&&!ronde){ const m=20, t=6; [[m,m,L-2*m,t],[m,l-m-t,L-2*m,t]].forEach(([x,z,ww,d],i)=>{ const id='rg'+i; pc[id]=B3(id,x,e,z,ww,0.5,d,'o'); rg.push(id); });
+      [[m,m],[L-m-t,m]].forEach(([x,z],i)=>{ const id='rh'+i; pc[id]=B3(id,x,e,z,t,0.5,l-2*m,'o'); rg.push(id); }); }
+    if(lam){ const ess2=v.ess==='noyer'?'Érable':'Noyer'; P.push({nom:`Baguette en ${ESS_O[v.ess].toLowerCase()}`,q:Math.ceil(nb/2),L:Lt+20,l:Math.round(w),t:'m',sec:`${e+3} × ${Math.round(w)}`},{nom:`Baguette en ${ess2.toLowerCase()} (bois foncé ou clair qui contraste)`,q:Math.floor(nb/2),L:Lt+20,l:Math.round(w),t:'m',sec:`${e+3} × ${Math.round(w)}`});
+      addQ(Q,'Colle à bois résistante à l’eau (vinylique D3)',1); addQ(Q,'Serre-joints',Math.max(3,Math.ceil(Lt/150))); }
+    else P.push({nom:'Planche',q:1,L:Lt,l,e,t:'p',note:ronde?`disque Ø ${cm(L)} cm`:v.forme==='poignee'?'poignée découpée dans la même planche':''});
+    if(v.forme==='poignee'&&lam) notes.push('Avec des baguettes, faites dépasser de 11 cm les 1 ou 2 baguettes du milieu : la poignée se découpe dedans après collage.');
+    Q['Patins antidérapants (facultatif)']=4; finO(Q,v.ess,0,true);
+    st.push({t:lam?'Coller les baguettes':'Tracer et découper',x:lam?`Rabotez ou poncez les ${nb} baguettes pour qu’elles se touchent bien. Encollez les faces, alternez les deux bois, serrez avec les serre-joints (un dessus, un dessous, en alternance) et essuyez la colle qui sort. 24 heures de séchage.`:'Tracez la forme sur la planche, découpez à la scie sauteuse ou à la scie à ruban, poncez les bords.',add:ids.filter(x=>x.startsWith('b')),vis:[]});
+    if(lam||ronde||v.forme==='poignee') st.push({t:'Mise en forme',x:`${lam?'Raclez la colle, rabotez ou poncez les deux faces bien à plat. ':''}${ronde?'Tracez le cercle au compas et découpez. ':''}${v.forme==='poignee'?'Découpez la poignée, percez le trou de Ø 22 mm pour la suspendre. ':''}Arrondissez toutes les arêtes (rayon de 3 à 5 mm) à la râpe ou à la défonceuse.`,add:['po','tr'].filter(x=>pc[x]),vis:[]});
+    if(rg.length) st.push({t:'Rigole à jus',x:'Défonceuse avec une fraise demi-ronde de 10 mm et un guide parallèle, à 2 cm du bord, sur 5 mm de profondeur. Faites le tour en arrêtant aux angles.',add:rg,vis:[]});
+    st.push({t:'Finition',x:'Ponçage au grain 120, 180 puis 240. Mouillez légèrement le bois pour relever les fibres, laissez sécher et reponcez au 240. Huile alimentaire en 3 couches, en essuyant le surplus.',add:[],vis:[]});
+    notes.push('Bois dur à grain fin seulement : hêtre, érable, noyer, merisier, olivier. Pas de pin ni de sapin (résine, odeur, trop tendres), pas de chêne pour couper (ses tanins noircissent au contact des aliments), pas de contreplaqué ni de MDF (colle).',
+      'Entretien : lavage à l’eau chaude et au savon, jamais au lave-vaisselle ni à tremper. Séchage debout. Huilez dès que le bois paraît sec.',
+      'Une épaisseur de 25 à 30 mm évite que la planche se voile.',lam?'Les baguettes de la même largeur donnent un beau rayé ; de largeurs différentes, un motif plus vivant.':'');
+    if(e<15&&!ronde) warns.push('Moins de 15 mm, la planche risque de se voiler à l’eau : gardez-la pour le service.');
+    const out=meuble({...v,e,mat:'obj'},{m3d:{pc,st,cotes:{W:Lt,H:e,D:l}},titre:'Planche',pieces:P,q:Q,notes:notes.filter(Boolean),warns,vis:false,
+      info:[ronde?`Ø ${cm(L)} cm`:`${cm(Lt)} × ${cm(l)} cm`,lam?`${nb} baguettes de ${cm(w)} cm`:''].filter(Boolean),
+      vue:vueAuto(Object.values(pc),'y',{titre:'Vue de dessus',sauf:[]})});
+    return {...out,big:ronde?`Planche ronde Ø ${cm(L)} cm`:`Planche ${cm(Lt)} × ${cm(l)} cm`};
+  }};
+
+TOOLS['o-bijoux']={nom:'Boîte à bijoux',aide:'Une boîte à couvercle, avec des cases au fond et un plateau amovible à petites cases. Angles bout à bout, ou en onglet avec des clés d’angle comme un ébéniste.',
+  pic:'<path d="M6 22h36v18H6z"/><path d="M6 22l3-12h30l3 12"/><path d="M18 22v18M30 22v18M6 31h36"/>',
+  champs:[N('L','Longueur','cm',24),N('l','Largeur','cm',16),N('H','Hauteur sans le couvercle','cm',8),N('e','Épaisseur des planchettes','mm',10),
+    S('ass','Angles',[['onglet','En onglet, avec des clés d’angle'],['simple','Bout à bout, collés et cloués']],'onglet'),
+    S('couv','Couvercle',[['charn','À charnières'],['pose','Posé, avec une feuillure dessous']],'charn'),
+    N('nx','Cases dans la longueur','',3),N('ny','Cases dans la largeur','',2),C('plat','Plateau amovible à cases au-dessus',true),
+    essO('merisier','merisier','noyer','chene','pin','cp')],
+  calc(v){
+    const L=clamp(v.L*10,100,600), l=clamp(v.l*10,80,400), H=clamp(v.H*10,40,250), e=clamp(v.e,6,20), ong=v.ass==='onglet', ec=5, ef=5;
+    const nx=clamp(Math.round(v.nx),1,6), ny=clamp(Math.round(v.ny),1,4), Li=L-2*e, li=l-2*e, pc={}, P=[], Q={}, st=[], notes=[], warns=[], info=[];
+    const yw=ong?0:ef, hw=ong?H:H-ef, yf=ong?4:0, y0=ong?yf+ef:ef;
+    pc.dv=B3('dv',0,yw,l-e,L,hw,e,'p'); pc.dr=B3('dr',0,yw,0,L,hw,e,'p');
+    pc.cg=B3('cg',0,yw,e,e,hw,li,'p'); pc.cd=B3('cd',L-e,yw,e,e,hw,li,'p');
+    pc.fo=ong?B3('fo',e-4,yf,e-4,Li+8,ef,li+8,'p'):B3('fo',0,0,0,L,ef,l,'p');
+    P.push({nom:'Devant et derrière',q:2,L,l:hw,e,t:'p',note:ong?'bouts coupés à 45°':''},{nom:'Côté',q:2,L:ong?l:li,l:hw,e,t:'p',note:ong?'bouts coupés à 45°':''});
+    P.push({nom:'Fond (contreplaqué 5 mm)',q:1,L:ong?Li+8:L,l:ong?li+8:l,e:ef,t:'p',note:ong?'glissé dans une rainure de 5,5 × 4 mm, à 4 mm du bas':'collé et cloué dessous'});
+    const ht=v.plat?clamp(Math.round(H*0.35),22,40):0, yTas=H-ht-1, hc=(v.plat?yTas-10:H-2)-y0, cs=[];
+    for(let i=1;i<nx;i++){ const id='cx'+i; pc[id]=B3(id,e+i*Li/nx-ec/2,y0,e,ec,hc,li,'p'); cs.push(id); }
+    for(let i=1;i<ny;i++){ const id='cz'+i; pc[id]=B3(id,e,y0,e+i*li/ny-ec/2,Li,hc,ec,'p'); cs.push(id); }
+    if(nx>1) P.push({nom:'Cloison en largeur',q:nx-1,L:li,l:hc,e:ec,t:'p',note:ny>1?'entailles à mi-hauteur':''}); if(ny>1) P.push({nom:'Cloison en longueur',q:ny-1,L:Li,l:hc,e:ec,t:'p'});
+    const pt=[];
+    if(v.plat){ const tw=5, Lp=Li-3, lp=li-3, x0=e+1.5, z0=e+1.5, yb=yTas;
+      pc.ta=B3('ta',e,yTas-10,e,Li,10,6,'m'); pc.tb=B3('tb',e,yTas-10,l-e-6,Li,10,6,'m');
+      pc.pf=B3('pf',x0,yb,z0,Lp,3,lp,'p'); [['p1',x0,z0,Lp,tw],['p2',x0,z0+lp-tw,Lp,tw],['p3',x0,z0+tw,tw,lp-2*tw],['p4',x0+Lp-tw,z0+tw,tw,lp-2*tw]].forEach(([id,x,z,w,d])=>{ pc[id]=B3(id,x,yb+3,z,w,ht-3,d,'p'); pt.push(id); });
+      const tx=nx+1; for(let i=1;i<tx;i++){ const id='q'+i; pc[id]=B3(id,x0+i*Lp/tx-2,yb+3,z0+tw,4,ht-8,lp-2*tw,'p'); pt.push(id); }
+      pc.qz=B3('qz',x0+tw,yb+3,z0+lp/2-2,Lp-2*tw,ht-8,4,'p'); pt.push('qz'); pt.unshift('pf');
+      P.push({nom:'Tasseau support du plateau',q:2,L:Li,l:10,t:'m',sec:'6 × 10'},{nom:'Fond du plateau (contreplaqué 3 mm)',q:1,L:Lp,l:lp,e:3,t:'p'},
+        {nom:'Bord du plateau',q:2,L:Lp,l:ht-3,e:tw,t:'p'},{nom:'Bord du plateau',q:2,L:lp-2*tw,l:ht-3,e:tw,t:'p'},{nom:'Petite cloison',q:tx-1,L:lp-2*tw,l:ht-8,e:4,t:'p'},{nom:'Petite cloison',q:1,L:Lp-2*tw,l:ht-8,e:4,t:'p'});
+      info.push(`Plateau : ${2*tx} petites cases de ${cm(ht-3)} cm de haut`); }
+    const kl=[];
+    if(ong){ const k=Math.max(2,Math.min(4,Math.round(H/25))), ky=Array.from({length:k},(_,i)=>H*(i+1)/(k+1)), s=Math.min(12,e*1.2);
+      [[0,l,1,-1],[L,l,-1,-1],[L,0,-1,1]].forEach(([cx,cz,sx,sz],c)=>ky.forEach((y,i)=>{
+        const a='k'+c+i+'a', b='k'+c+i+'b'; pc[a]=B3(a,sx>0?cx:cx-s,y,cz+(sz<0?0:-0.6),s,2.5,0.6,'o'); pc[b]=B3(b,cx+(sx>0?-0.6:0),y,sz<0?cz-s:cz,0.6,2.5,s,'o'); kl.push(a,b); }));
+      Q['Placage ou chutes de bois foncé de 2 mm (clés d’angle)']=`${4*k} clés`; }
+    const yc=H;
+    if(v.couv==='charn'){ pc.cv=B3('cv',0,yc,-e,L,l,e,'p'); addQ(Q,'Charnières laiton 25 mm et leurs petites vis',2); addQ(Q,'Petit fermoir laiton (facultatif)',1); }
+    else { pc.cv=B3('cv',0,yc+60,0,L,e,l,'p'); pc.cl=B3('cl',e+1,yc+60-6,e+1,Li-2,6,li-2,'p'); pc.cv.sur=['cl']; Q['Bouton bois ou laiton']=1; }
+    P.push({nom:'Couvercle',q:1,L,l,e,t:'p',note:v.couv==='pose'?`plus un cadre ou une planchette de ${cm(Li-2)} × ${cm(li-2)} cm collée dessous (feuillure)`:''});
+    addQ(Q,'Colle à bois vinylique (flacon)',1); if(!ong) addQ(Q,'Pointes tête homme 1,2 × 20 mm',16);
+    Q['Feutrine ou velours adhésif pour le fond des cases']=`${fr(Li*li/1e6*(v.plat?2:1)*1.2,2)} m²`; addQ(Q,'Patins feutre',4);
+    finO(Q,v.ess,(2*L*l+2*(L+l)*H)/1e6,false);
+    st.push({t:'Les quatre côtés',x:ong?`Coupez les côtés à 45° (boîte à onglets ou scie à onglets bien réglée). Faites la rainure du fond : 5,5 mm de large, 4 mm de profond, à 4 mm du bas. Encollez les onglets, glissez le fond (sans colle), et serrez avec une sangle ou du ruban adhésif. Vérifiez l’équerre.`:`Collez et clouez les côtés entre le devant et le derrière (2 pointes par angle). Vérifiez l’équerre, puis collez et clouez le fond dessous.`,add:['dr','cg','cd','dv','fo'],vis:[]});
+    if(kl.length) st.push({t:'Les clés d’angle',x:'Une fois sec, fixez la boîte dans un gabarit en V et faites à la scie fine des traits à travers chaque angle, en biais, à 45°. Collez-y des lamelles de placage foncé, laissez sécher, recoupez au ras et poncez : c’est solide et très décoratif.',add:kl,vis:[]});
+    if(cs.length) st.push({t:'Les cases',x:`Entaillez les cloisons à mi-hauteur pour les croiser, puis glissez-les dans la boîte, avec un point de colle. ${nx*ny} cases.`,add:cs,vis:[]});
+    if(pt.length) st.push({t:'Le plateau',x:`Collez les 2 tasseaux support à ${cm(ht+1)} cm sous le haut des côtés longs. Assemblez le petit plateau (bords collés sur le fond de 3 mm, petites cloisons) : il repose sur les tasseaux et s’enlève pour accéder aux cases du dessous.`,add:['ta','tb',...pt],vis:[]});
+    st.push({t:'Le couvercle',x:v.couv==='charn'?'Poncez la boîte et le couvercle, puis posez les 2 charnières à l’arrière, à 3 cm des côtés. Entaillez leur épaisseur au ciseau à bois pour que le couvercle ferme à plat.':'Collez la planchette ou le cadre sous le couvercle : elle rentre juste dans la boîte et l’empêche de glisser. Vissez le bouton.',add:['cv','cl'].filter(x=>pc[x]),vis:[]});
+    st.push({t:'Finition',x:'Poncez jusqu’au grain 240, passez la cire ou le vernis, puis collez la feutrine au fond des cases et les patins sous la boîte.',add:[],vis:[]});
+    notes.push('Pour des onglets justes : coupez les deux côtés de la même longueur ensemble, et faites un essai à blanc avant de coller.',
+      'Une sangle de serrage (ou du ruban adhésif de peintre tendu autour) suffit pour serrer une boîte en onglets.',
+      'Le contraste fait l’effet : clés en noyer sur une boîte claire, ou en érable sur une boîte foncée.');
+    if(e>14&&L<200) warns.push('Des planchettes épaisses sur une petite boîte la rendent lourde : 8 à 12 mm suffisent.');
+    const out=meuble({...v,e,mat:'obj'},{m3d:{pc,st,cotes:{W:L,H:H+(v.couv==='charn'?l:e+60),D:l}},titre:'Boîte à bijoux',pieces:P,q:Q,notes,warns,info:[`Intérieur : ${cm(Li)} × ${cm(li)} cm`,`${nx*ny} cases au fond, ${cm(hc)} cm de haut`,...info],vis:false,
+      vue:vueAuto(Object.values(pc).filter(p=>!['cv','cl'].includes(p.id)),'y',{titre:'Les cases vues de dessus',sauf:[...pt,'ta','tb']})});
+    return {...out,big:`Boîte à bijoux ${cm(L)} × ${cm(l)} cm`};
+  }};
+
+TOOLS['o-tiroir']={nom:'Boîte à tiroirs',aide:'Un petit caisson avec 1 à 3 tiroirs : pour le bureau, la couture, les petites vis de l’atelier.',
+  pic:'<rect x="6" y="10" width="36" height="28" rx="1"/><path d="M6 24h36"/><rect x="10" y="27" width="28" height="8"/><circle cx="24" cy="31" r="1.5"/><circle cx="24" cy="17" r="1.5"/>',
+  champs:[N('L','Largeur','cm',30),N('P','Profondeur','cm',25),N('H','Hauteur','cm',14),N('n','Nombre de tiroirs (1 à 3)','',1),N('e','Épaisseur des planches','mm',12),essO('pin','pin','cp','chene','merisier')],
+  calc(v){
+    const L=clamp(v.L*10,120,700), Pm=clamp(v.P*10,100,500), H=clamp(v.H*10,60,500), n=clamp(Math.round(v.n),1,3), e=clamp(v.e,8,20), ed=Math.min(e,10), ef=3;
+    const pc={}, P=[], Q={}, st=[], notes=[], warns=[], wi=L-2*e, hd=(H-2*e-(n-1)*e)/n, Pd=Pm-ef-5, sep=[], ti=[];
+    pc.ds=B3('ds',0,0,0,L,e,Pm,'p'); pc.dc=B3('dc',0,H-e,0,L,e,Pm,'p'); pc.cg=B3('cg',0,e,0,e,H-2*e,Pm,'p'); pc.cd=B3('cd',L-e,e,0,e,H-2*e,Pm,'p'); pc.fd=B3('fd',0,0,-ef,L,H,ef,'f');
+    for(let i=1;i<n;i++){ const id='s'+i; pc[id]=B3(id,e,e+i*hd+(i-1)*e,ef?0:0,wi,e,Pm,'p'); sep.push(id); }
+    const fw=wi-2, fh=hd-2, sh=fh-6, sl=Pd-e;
+    for(let i=0;i<n;i++){ const y=e+i*(hd+e)+1, out=i===0?Math.round(Pm*0.45):0, x=e+1, zF=Pm-e+out, p='t'+i;
+      pc[p+'f']=B3(p+'f',x,y,zF,fw,fh,e,'p'); pc[p+'g']=B3(p+'g',x,y+3,zF-sl,ed,sh,sl,'p'); pc[p+'d']=B3(p+'d',x+fw-ed,y+3,zF-sl,ed,sh,sl,'p');
+      pc[p+'a']=B3(p+'a',x+ed,y+3,zF-sl,fw-2*ed,sh,ed,'p'); pc[p+'b']=B3(p+'b',x,y,zF-sl,fw,3,sl,'f');
+      pc[p+'k']=PZ3(p+'k',rond(x+fw/2,y+fh/2,10,10,14),zF+e,15,'m'); ti.push([p+'b',p+'g',p+'d',p+'a',p+'f',p+'k']); }
+    P.push({nom:'Dessus et dessous',q:2,L,l:Pm,e,t:'p'},{nom:'Côté',q:2,L:H-2*e,l:Pm,e,t:'p'});
+    if(n>1) P.push({nom:'Séparation',q:n-1,L:wi,l:Pm,e,t:'p'});
+    P.push({nom:'Dos (contreplaqué 3 mm)',q:1,L:H,l:L,e:ef,t:'f',note:'cloué au dos'},{nom:'Façade de tiroir',q:n,L:fw,l:fh,e,t:'p',note:'1 mm de jeu tout autour'},
+      {nom:'Côté de tiroir',q:2*n,L:sl,l:sh,e:ed,t:'p'},{nom:'Arrière de tiroir',q:n,L:fw-2*ed,l:sh,e:ed,t:'p'},{nom:'Fond de tiroir (contreplaqué 3 mm)',q:n,L:fw,l:sl,e:3,t:'f',note:'cloué dessous'});
+    addQ(Q,'Colle à bois vinylique (flacon)',1); addQ(Q,'Pointes tête homme 1,2 × 25 mm',20+12*n); addQ(Q,'Boutons de tiroir bois Ø 20 mm',n); addQ(Q,'Patins feutre',4);
+    finO(Q,v.ess,2*(L*Pm+H*Pm+L*H)/1e6,false);
+    st.push({t:'Le caisson',x:'Collez et clouez les deux côtés entre le dessus et le dessous (ou vissez avec des vis de 3 × 30 et avant-trous). Vérifiez l’équerre avec les diagonales.',add:['ds','cg','cd','dc'],vis:[]});
+    if(sep.length) st.push({t:'Séparations',x:`Collez et clouez ${n>2?'les séparations':'la séparation'} entre les côtés, bien d’équerre, à ${cm(hd)} cm d’intervalle.`,add:sep,vis:[]});
+    st.push({t:'Le dos',x:'Clouez le dos tous les 5 cm : il garde le caisson d’équerre.',add:['fd'],vis:[]});
+    st.push({t:n>1?'Les tiroirs':'Le tiroir',x:`Collez et clouez les côtés du tiroir derrière la façade, l’arrière entre les côtés, puis le fond dessous. Faites un essai : ${n>1?'chaque':'le'} tiroir doit glisser sans forcer ; poncez les côtés si ça frotte, et frottez-les d’une bougie. Vissez les boutons.`,add:ti.flat(),vis:[]});
+    notes.push('Le tiroir doit être 1 à 2 mm plus étroit et plus bas que son ouverture.','Un peu de cire de bougie sur les côtés et sous le tiroir le fait glisser tout seul.');
+    if(hd<40) warns.push('Des tiroirs de moins de 4 cm de haut sont peu pratiques : réduisez le nombre de tiroirs ou augmentez la hauteur.');
+    const out=meuble({...v,e,mat:'obj'},{m3d:{pc,st,cotes:{W:L,H,D:Pm}},titre:'Boîte à tiroirs',pieces:P,q:Q,notes,warns,info:[`${n} tiroir${n>1?'s':''} : intérieur ${cm(fw-2*ed)} × ${cm(sl-ed)} cm, ${cm(sh-3)} cm de haut`],vis:false,
+      vue:vueAuto(Object.values(pc).filter(p=>!/^t[1-9]/.test(p.id)||true),'z',{titre:'Vue de face'})});
+    return {...out,big:`Boîte à ${n} tiroir${n>1?'s':''} · ${cm(L)} × ${cm(Pm)} × ${cm(H)} cm`};
+  }};
+
+TOOLS['o-caisse']={nom:'Caisse à outils',aide:'La caisse ouverte avec une poignée au milieu : pour transporter les outils, ou en panier pour les condiments, les pots de fleurs, les bouteilles.',
+  pic:'<path d="M5 24h38v16H5z"/><path d="M10 24l4-14M38 24l-4-14M14 13h20"/>',
+  champs:[N('L','Longueur','cm',50),N('l','Largeur','cm',22),N('H','Hauteur des côtés','cm',12),N('Hp','Hauteur aux bouts (poignée)','cm',28),N('e','Épaisseur des planches','mm',18),
+    S('poi','Poignée',[['rond','Manche rond (tourillon Ø 25 mm)'],['planche','Planche du milieu avec une prise main']],'rond'),essO('pin','pin','cp','chene','hetre')],
+  calc(v){
+    const L=clamp(v.L*10,250,900), l=clamp(v.l*10,120,400), H=clamp(v.H*10,60,300), Hp=clamp(v.Hp*10,H+80,500), e=clamp(v.e,12,25), pc={}, P=[], Q={}, st=[], notes=[], warns=[];
+    const bt=[[e,e],[l-e,e],[l-e,H],[l/2+32,Hp],[l/2-32,Hp],[e,H]];
+    pc.fo=B3('fo',0,0,0,L,e,l,'p'); pc.cg=B3('cg',0,e,0,L,H-e,e,'p'); pc.cd=B3('cd',0,e,l-e,L,H-e,e,'p');
+    pc.bg=PX3('bg',bt,0,e,'p'); pc.bd=PX3('bd',bt,L-e,e,'p');
+    const yM=Hp-30, mi=[];
+    if(v.poi==='rond'){ pc.ma=PX3('ma',rond(l/2,yM,12.5,12.5,16),-5,L+10,'m'); mi.push('ma'); P.push({nom:'Manche',q:1,L:L+10,l:25,t:'m',sec:'tourillon Ø 25',note:'dépasse de 5 mm de chaque côté'}); }
+    else { const yb=e, hb=Hp-e-6; pc.mp=B3('mp',e,yb,l/2-e/2,L-2*e,hb,e,'p'); const yc=Hp-55;
+      pc.mh=PZ3('mh',[...rond(L/2-45,yc,16,16,10).filter(q=>q[0]<=L/2-45),...rond(L/2+45,yc,16,16,10).filter(q=>q[0]>=L/2+45)].sort((a,b)=>Math.atan2(a[1]-yc,a[0]-L/2)-Math.atan2(b[1]-yc,b[0]-L/2)),l/2+e/2,0.6,'o');
+      pc.mh.sur=['mp']; mi.push('mp','mh'); P.push({nom:'Planche du milieu',q:1,L:L-2*e,l:hb,e,t:'p',note:'prise main 12 × 3,2 cm à 4 cm du haut'}); }
+    P.unshift({nom:'Fond',q:1,L,l,e,t:'p'},{nom:'Côté long',q:2,L,l:H-e,e,t:'p'},{nom:'Bout (pignon)',q:2,L:Hp-e,l:l-2*e,e,t:'p',note:`haut en pointe tronquée : ${cm(H-e)} cm sur les bords, ${cm(Hp-e)} cm au milieu`});
+    addQ(Q,`Vis à bois ${visDe(e)}`,v.poi==='rond'?20:26); addQ(Q,'Colle à bois vinylique (flacon)',1); if(v.poi==='rond') addQ(Q,'Vis 4 × 40 mm (bloquer le manche)',2);
+    finO(Q,v.ess,2*(L*l+2*L*H+2*l*Hp)/1e6,false);
+    st.push({t:'Le fond et les côtés',x:'Collez et vissez les deux côtés longs sur le fond (vis par-dessous, tous les 12 cm).',add:['fo','cg','cd'],vis:[]},
+      {t:'Les bouts',x:`Tracez la forme des bouts et découpez à la scie sauteuse. ${v.poi==='rond'?`Percez le trou du manche à Ø 25 mm, son centre à ${cm(30)} cm sous la pointe (une mèche plate, avec une planche martyre dessous). `:''}Collez-les et vissez-les à travers les côtés et le fond.`,add:['bg','bd'],vis:[]},
+      {t:'La poignée',x:v.poi==='rond'?'Enfilez le manche à travers les deux bouts, avec un peu de colle. Une petite vis par le dessus de chaque bout l’empêche de tourner.':'Percez deux trous de Ø 32 mm aux bouts de la prise main, sciez entre les deux à la scie sauteuse, arrondissez à la râpe. Collez et vissez la planche entre les bouts.',add:mi,vis:[]});
+    notes.push('Arrondissez bien la poignée et les arêtes du haut : on la porte souvent chargée.','Pour une caisse lourde (outils), du bois de 18 mm minimum et un manche en hêtre.');
+    const out=meuble({...v,e,mat:'obj'},{m3d:{pc,st,cotes:{W:L,H:Hp,D:l}},titre:'Caisse à outils',pieces:P,q:Q,notes,warns,info:[`Intérieur : ${cm(L-2*e)} × ${cm(l-2*e)} cm, ${cm(H-e)} cm de profondeur`],
+      vue:vueAuto(Object.values(pc),'x',{titre:'Vue de bout'})});
+    return {...out,big:`Caisse à outils ${cm(L)} × ${cm(l)} cm`};
+  }};
+
+TOOLS['o-cles']={nom:'Porte-clés mural',aide:'Des planchettes de hauteurs différentes, une petite tablette et des crochets pour les clés. En têtes de chat comme sur la photo, en pointes, arrondies ou droites.',
+  pic:'<path d="M8 30V10l3 3h4l3-3v20M20 30V15l3 3h4l3-3v15M32 30V20l3 3h4l3-3v10"/><path d="M6 30h38v4H6z"/><path d="M14 34v6M25 34v6M36 34v6"/>',
+  champs:[S('forme','Haut des planchettes',[['chat','Têtes de chat (comme sur la photo)'],['pointe','En pointe'],['rond','Arrondi'],['droit','Droit']],'chat'),
+    N('n','Nombre de planchettes','',4),N('lw','Largeur d’une planchette','cm',9),N('Hm','Hauteur de la plus haute','cm',40),N('dh','Différence de hauteur','cm',7),
+    N('e','Épaisseur','mm',18),C('tab','Tablette (plante, courrier…)',true),N('nc','Nombre de crochets','',4),essO('pin','pin','cp','chene')],
+  calc(v){
+    const n=clamp(Math.round(v.n),1,8), lw=clamp(v.lw*10,40,200), e=clamp(v.e,10,30), g=3, W=n*lw+(n-1)*g, hc=80, tab=v.tab, D=90, f=v.forme, nc=clamp(Math.round(v.nc),1,10);
+    const yP=tab?hc+e:0, zP=tab?0:0, pc={}, P=[], Q={}, st=[], notes=[], warns=[], pl=[], fa=[], traits=[];
+    const hs=Array.from({length:n},(_,i)=>Math.max(120,v.Hm*10-i*v.dh*10)), hmin=Math.min(...hs);
+    hs.forEach((h,i)=>{ const x0=i*(lw+g), id='pl'+i, pol=profil(f,x0,yP,lw,h); pc[id]=PZ3(id,pol,0,e,'p'); pc[id].v2={z:pol}; pl.push(id); grouper(P,'Planchette',`${e} × ${Math.round(lw)}`,h,1,'',);
+      if(f==='chat'){ const yy=yP+h-lw*0.85, cx=x0+lw/2; [[cx-lw*0.2],[cx+lw*0.2]].forEach(([ex],k)=>{ const id2='oe'+i+k; pc[id2]=PZ3(id2,fendu(ex,yy,lw*0.09),e,0.5,'o'); pc[id2].sur=[id]; fa.push(id2); });
+        const id3='ne'+i; pc[id3]=PZ3(id3,[[cx-4,yy-10],[cx+4,yy-10],[cx,yy-16]],e,0.5,'o'); pc[id3].sur=[id]; fa.push(id3);
+        traits.push((u0,v0)=>{ const X=x=>x-u0, Yv=y=>-(y-v0), r=lw*0.09; let d='';
+          [cx-lw*0.2,cx+lw*0.2].forEach(ex=>{ d+=`M${X(ex-r)} ${Yv(yy)}Q${X(ex)} ${Yv(yy-r)} ${X(ex+r)} ${Yv(yy)}`; });
+          d+=`M${X(cx-4)} ${Yv(yy-10)}L${X(cx+4)} ${Yv(yy-10)}L${X(cx)} ${Yv(yy-16)}Z`;
+          [-1,1].forEach(s=>[0,6].forEach(dy=>{ d+=`M${X(cx+s*8)} ${Yv(yy-14-dy/2)}L${X(cx+s*lw*0.4)} ${Yv(yy-10-dy*1.2)}`; })); return d; }); } });
+    P[0].note=`hauteurs : ${hs.map(h=>cm(h)).join(' – ')} cm`;
+    pc.cr=B3('cr',0,0,tab?0:e,W,hc,e,'p'); P.push({nom:'Planche à crochets',q:1,L:W,l:hc,t:'m',sec:`${e} × ${hc}`,note:tab?'sous la tablette':'devant le bas des planchettes'});
+    const tr=[]; [yP+40,yP+hmin-60].forEach((y,i)=>{ const id='tr'+i; pc[id]=B3(id,0,y,-15,W,40,15,'m'); tr.push(id); }); P.push({nom:'Tasseau au dos',q:2,L:W,l:40,t:'m',sec:'15 × 40',note:'relie les planchettes ; il écarte aussi l’objet du mur'});
+    if(tab){ pc.tb=B3('tb',-10,hc,0,W+20,e,D,'p'); P.push({nom:'Tablette',q:1,L:W+20,l:D,t:'m',sec:`${e} × ${D}`,note:'arrondir les angles avant'}); }
+    const ck=[]; for(let i=0;i<nc;i++){ const x=W*(i+0.5)/nc, id='ck'+i, z0=(tab?0:e)+e;
+      pc[id]=B3(id,x-3,25,z0,6,6,22,'met'); pc[id+'h']=B3(id+'h',x-3,25,z0+16,6,22,6,'met'); ck.push(id,id+'h'); }
+    addQ(Q,'Crochets à visser (laiton ou noir)',nc); addQ(Q,'Vis à bois 4 × 30 mm',4*n+(tab?2*n+4:0)); addQ(Q,'Pattes de fixation murales (ou 2 trous et chevilles)',2); addQ(Q,'Colle à bois vinylique (flacon)',1);
+    if(f==='chat') Q['Feutre noir permanent fin, ou pyrograveur']=1;
+    finO(Q,v.ess,(W*(Math.max(...hs)+hc)*2+(tab?(W+20)*D*2:0))/1e6,false);
+    st.push({t:'Les planchettes',x:`Tracez la forme du haut sur chaque planchette (un gabarit en carton pour qu’elles soient toutes pareilles), découpez à la scie sauteuse, poncez. Posez-les face contre la table, ${g} mm d’écart, et vissez les 2 tasseaux du dos : 1 vis par planchette et par tasseau.`,add:[...pl,...tr],vis:[]});
+    if(fa.length) st.push({t:'Les têtes de chat',x:'Dessinez au crayon puis au feutre noir (ou au pyrograveur) les yeux fermés, le nez et les moustaches. Laissez sécher avant la finition.',add:fa,vis:[]});
+    st.push({t:tab?'Tablette et planche à crochets':'La planche à crochets',x:tab?'Vissez la tablette sous les planchettes, par-dessous, puis la planche à crochets sous la tablette, à l’arrière (2 vis par planchette, avec colle).':'Collez et vissez la planche à crochets devant le bas des planchettes, par l’arrière.',add:tab?['tb','cr']:['cr'],vis:[]});
+    st.push({t:'Les crochets',x:`Tracez ${nc} repères régulièrement espacés, faites un avant-trou de 2 mm et vissez les crochets à la main. Fixez 2 pattes au dos, puis accrochez au mur avec des chevilles adaptées.`,add:ck,vis:[]});
+    notes.push('Des chutes de palette ou de lambris font très bien l’affaire.','Pour le feutre, une couche de vernis par-dessus le protège des doigts.');
+    const out=meuble({...v,e,mat:'obj'},{m3d:{pc,st,cotes:{W,H:yP+Math.max(...hs),D:tab?D:2*e}},titre:'Porte-clés',pieces:P,q:Q,notes,warns,info:[`Largeur ${cm(W)} cm, hauteur ${cm(yP+Math.max(...hs))} cm`],vis:false,
+      vue:vueAuto(Object.values(pc).filter(p=>!fa.includes(p.id)&&!ck.includes(p.id)),'z',{titre:'Vue de face',traits,sauf:tr})});
+    return {...out,big:`Porte-clés · ${n} planchette${n>1?'s':''}, ${nc} crochet${nc>1?'s':''}`};
+  }};
+
+TOOLS['o-jmurale']={nom:'Jardinière murale',aide:'Un petit bac à lattes devant une palissade de lattes pointues : pour un pot de fleurs au mur ou sur une clôture, en bois de palette.',
+  pic:'<path d="M10 26V12l3-4 3 4v14M18 26V8l3-4 3 4v18M26 26V8l3-4 3 4v18M34 26V12l3-4 3 4v14"/><path d="M8 26h34v16H8zM8 31h34M8 36h34"/>',
+  champs:[N('n','Nombre de lattes debout','',5),N('lw','Largeur des lattes','cm',7),N('Hm','Hauteur de la latte du milieu','cm',55),N('dh','Différence de hauteur','cm',6),
+    S('forme','Haut des lattes',[['pointe','En pointe (comme sur la photo)'],['rond','Arrondi'],['droit','Droit']],'pointe'),
+    N('nb','Lattes du bac, en hauteur','',3),N('P','Profondeur du bac','cm',14),N('e','Épaisseur des lattes','mm',15),
+    S('fin','Finition',[['lasure','Lasure teinte noyer (comme sur la photo)'],['nat','Naturel, huile de lin'],['peint','Peinture extérieure']],'lasure')],
+  calc(v){
+    const n=clamp(Math.round(v.n),3,9), lw=clamp(v.lw*10,40,150), e=clamp(v.e,10,25), g=8, W=n*lw+(n-1)*g, nb=clamp(Math.round(v.nb),1,5), Pm=clamp(v.P*10,80,300), gb=3;
+    const hb=nb*lw+(nb-1)*gb, mid=(n-1)/2, pc={}, P=[], Q={}, st=[], notes=[], warns=[], la=[], bac=[], fo=[];
+    TEINTE.jm=v.fin==='lasure'?[20,45,38]:v.fin==='peint'?[200,25,70]:[34,45,74];
+    const hs=Array.from({length:n},(_,i)=>Math.max(hb+60,v.Hm*10-Math.round(Math.abs(i-mid))*v.dh*10)), hmin=Math.min(...hs);
+    hs.forEach((h,i)=>{ const id='la'+i, pol=profil(v.forme,i*(lw+g),0,lw,h); pc[id]=PZ3(id,pol,0,e,'jm'); pc[id].v2={z:pol}; la.push(id); grouper(P,'Latte debout',`${e} × ${Math.round(lw)}`,h,1); });
+    pc.tr=B3('tr',0,hmin-90,-15,W,40,15,'m'); P.push({nom:'Tasseau au dos (en haut)',q:1,L:W,l:40,t:'m',sec:'15 × 40'});
+    const nf=Math.ceil(Pm/lw);
+    for(let i=0;i<nf;i++){ const id='fo'+i, w=Math.min(lw,Pm-i*lw); pc[id]=B3(id,0,0,e+i*lw,W,e,w-2,'jm'); fo.push(id); }
+    for(let r=0;r<nb;r++){ const y=r*(lw+gb);
+      [['bg'+r,-e,y,e,e,lw,Pm],['bd'+r,W,y,e,e,lw,Pm],['bf'+r,-e,y,e+Pm,W+2*e,lw,e]].forEach(([id,x,yy,z,w,h,d])=>{ pc[id]=B3(id,x,yy,z,w,h,d,'jm'); bac.push(id); }); }
+    P.push({nom:'Latte du fond du bac',q:nf,L:W,l:lw,t:'m',sec:`${e} × ${Math.round(lw)}`},{nom:'Latte de façade du bac',q:nb,L:W+2*e,l:lw,t:'m',sec:`${e} × ${Math.round(lw)}`},{nom:'Latte de côté du bac',q:2*nb,L:Pm,l:lw,t:'m',sec:`${e} × ${Math.round(lw)}`});
+    const im=Math.round(mid);
+    pc.tro=PZ3('tro',rond(im*(lw+g)+lw/2,hs[im]-(v.forme==='droit'?30:lw*0.75),5,5,10),e,0.5,'o'); pc.tro.sur=['la'+im];
+    addQ(Q,'Pointes ou vis inox 3,5 × 30 mm',4*n+6*nb+2*nf+4); addQ(Q,'Colle à bois extérieure (D3)',1); Q['Piton plat ou attache murale, et cheville']=1;
+    Q[v.fin==='lasure'?'Lasure teinte noyer':v.fin==='peint'?'Sous-couche et peinture extérieure':'Huile de lin']='1 petit pot';
+    Q['Pot de fleurs qui rentre dans le bac']=`moins de ${cm(Pm-10)} cm de diamètre et ${cm(hb+20)} cm de haut`;
+    st.push({t:'Les lattes debout',x:`Coupez les ${n} lattes (hauteurs ${hs.map(h=>cm(h)).join(' – ')} cm), taillez le haut${v.forme==='pointe'?' en pointe (deux coupes à 45°)':v.forme==='rond'?' en arrondi (scie sauteuse)':''}. Posez-les face contre la table, ${cm(g)} cm d’écart, le bas bien aligné, et vissez le tasseau du dos.`,add:[...la,'tr'],vis:[]},
+      {t:'Le fond du bac',x:'Vissez les lattes du fond sous le bas des lattes debout, perpendiculaires, en laissant un petit jour entre elles pour l’eau.',add:fo,vis:[]},
+      {t:'Les côtés et la façade',x:`Vissez ${nb} rangées de lattes sur les côtés (contre le bord des lattes debout et du fond), puis la façade par-devant, qui recouvre le bout des côtés.`,add:bac,vis:[]},
+      {t:'Finition et pose',x:'Poncez, passez la finition sur toutes les faces. Percez un trou en haut de la latte du milieu pour l’accrocher sur une vis ou un piton.',add:['tro'],vis:[]});
+    notes.push('Bois de palette idéal : démontez les palettes avec un pied-de-biche, et choisissez des palettes marquées « HT » (pas « MB »).','Mettez le pot dans le bac plutôt que de la terre directement : le bois dure beaucoup plus longtemps.',
+      'La version sans bac (planchettes seules) fait un joli porte-manteau avec 3 patères.');
+    const Ht=Math.max(...hs);
+    const out=meuble({...v,e,mat:'ext'},{m3d:{pc,st,cotes:{W,H:Ht,D:Pm+2*e}},titre:'Jardinière murale',pieces:P,q:Q,notes,warns,info:[`${cm(W)} cm de large, ${cm(Ht)} cm de haut`,`Bac intérieur : ${cm(W)} × ${cm(Pm)} cm, ${cm(hb-e)} cm de profondeur`],vis:false,
+      vue:vueAuto(Object.values(pc),'z',{titre:'Vue de face',sauf:['tr','tro']})});
+    return {...out,big:`Jardinière murale ${cm(W)} × ${cm(Ht)} cm`};
+  }};
 
 function symbolesHTML(){
   return `<section class="card"><h2>Symboles électriques</h2><p class="hint">Les symboles qu’on trouve sur les plans et les schémas.</p>
