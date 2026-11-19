@@ -1715,8 +1715,8 @@ const FAMILLES = [
   {id:'murs',       nom:'Murs',       desc:'Peinture, papier peint, placo', outils:['papier-peint','peinture','placo','enduit']},
   {id:'sols',       nom:'Sols',       desc:'Carrelage, parquet, terrasse', outils:['carrelage','parquet','plinthes','terrasse']},
   {id:'maconnerie', nom:'Maçonnerie', desc:'Béton, fondations, parpaings', outils:['beton','fondations','mortier','crepi','parpaings','pente']},
-  {id:'menuiserie', nom:'Menuiserie', desc:'Étagères, meubles, tables, finitions',  outils:[{g:'Étagères',outils:['m-etagere','m-murale','m-echelle','m-angle']},{g:'Meubles',outils:['m-biblio','m-bas','m-placard']},{g:'Casiers',outils:['m-casier','m-bouteilles']},{g:'Tables',outils:['m-tbasse','m-tsalon','m-sellette']},'m-etabli','finitions']},
-  {id:'jardin',     nom:'Jardin',     desc:'Nichoir, jardinières, table, compost', outils:[{g:'Oiseaux',outils:['j-nichoir','j-mangeoire']},{g:'Jardinières',outils:['j-jardiniere','j-echelle','j-gradins']},'j-terrasse','j-pique','j-compost']},
+  {id:'menuiserie', nom:'Menuiserie', desc:'Étagères, meubles, tables, finitions',  outils:[{g:'Étagères',outils:['m-etagere','m-murale','m-echelle','m-angle','m-angle-mont','m-angle-ech']},{g:'Meubles',outils:['m-biblio','m-bas','m-placard']},{g:'Casiers',outils:['m-casier','m-bouteilles']},{g:'Tables et tabourets',outils:['m-tbasse','m-tsalon','m-sellette','m-tabouret']},'m-etabli','finitions']},
+  {id:'jardin',     nom:'Jardin',     desc:'Nichoir, abri à insectes, table, compost', outils:[{g:'Oiseaux et insectes',outils:['j-nichoir','j-mangeoire','j-insectes']},{g:'Jardinières',outils:['j-jardiniere','j-echelle','j-gradins']},'j-terrasse','j-pique','j-compost']},
   {id:'objets',     nom:'Petits objets', desc:'Plateau tournant, boîtes, porte-clés', outils:[{g:'Cuisine',outils:['o-plateau','o-planche']},{g:'Boîtes',outils:['o-bijoux','o-tiroir','o-caisse']},{g:'Au mur',outils:['o-cles','o-jmurale']}]},
   {id:'isolation',  nom:'Isolation',  desc:'Isolants, épaisseurs', outils:['isolants','epaisseurs','isol-qte']},
   {id:'plomberie',  nom:'Plomberie',  desc:'Tuyaux, équipements, évacuations', outils:[{g:'Alimentation',outils:['tuyaux','assemblages','equipements']},'evacuations']},
@@ -3716,14 +3716,15 @@ TOOLS['o-bijoux']={nom:'Boîte à bijoux',aide:'Une boîte à couvercle, avec de
     P.push({nom:'Fond (contreplaqué 5 mm)',q:1,L:ong?Li+8:L,l:ong?li+8:l,e:ef,t:'p',note:ong?'glissé dans une rainure de 5,5 × 4 mm, à 4 mm du bas':'collé et cloué dessous'});
     const ht=v.plat?clamp(Math.round(H*0.35),22,40):0, yTas=H-ht-1, hc=(v.plat?yTas-10:H-2)-y0, cs=[];
     for(let i=1;i<nx;i++){ const id='cx'+i; pc[id]=B3(id,e+i*Li/nx-ec/2,y0,e,ec,hc,li,'p'); cs.push(id); }
-    for(let i=1;i<ny;i++){ const id='cz'+i; pc[id]=B3(id,e,y0,e+i*li/ny-ec/2,Li,hc,ec,'p'); cs.push(id); }
+    /* les cloisons en longueur sont dessinées en tronçons entre les cloisons en largeur : elles se croisent à mi-bois */
+    for(let i=1;i<ny;i++) for(let j=0;j<nx;j++){ const xa=j===0?e:e+j*Li/nx+ec/2, xb=j===nx-1?L-e:e+(j+1)*Li/nx-ec/2, id='cz'+i+'_'+j; pc[id]=B3(id,xa,y0,e+i*li/ny-ec/2,xb-xa,hc,ec,'p'); cs.push(id); }
     if(nx>1) P.push({nom:'Cloison en largeur',q:nx-1,L:li,l:hc,e:ec,t:'p',note:ny>1?'entailles à mi-hauteur':''}); if(ny>1) P.push({nom:'Cloison en longueur',q:ny-1,L:Li,l:hc,e:ec,t:'p'});
     const pt=[];
     if(v.plat){ const tw=5, Lp=Li-3, lp=li-3, x0=e+1.5, z0=e+1.5, yb=yTas;
       pc.ta=B3('ta',e,yTas-10,e,Li,10,6,'m'); pc.tb=B3('tb',e,yTas-10,l-e-6,Li,10,6,'m');
       pc.pf=B3('pf',x0,yb,z0,Lp,3,lp,'p'); [['p1',x0,z0,Lp,tw],['p2',x0,z0+lp-tw,Lp,tw],['p3',x0,z0+tw,tw,lp-2*tw],['p4',x0+Lp-tw,z0+tw,tw,lp-2*tw]].forEach(([id,x,z,w,d])=>{ pc[id]=B3(id,x,yb+3,z,w,ht-3,d,'p'); pt.push(id); });
       const tx=nx+1; for(let i=1;i<tx;i++){ const id='q'+i; pc[id]=B3(id,x0+i*Lp/tx-2,yb+3,z0+tw,4,ht-8,lp-2*tw,'p'); pt.push(id); }
-      pc.qz=B3('qz',x0+tw,yb+3,z0+lp/2-2,Lp-2*tw,ht-8,4,'p'); pt.push('qz'); pt.unshift('pf');
+      for(let j=0;j<tx;j++){ const xa=j===0?x0+tw:x0+j*Lp/tx+2, xb=j===tx-1?x0+Lp-tw:x0+(j+1)*Lp/tx-2, id='qz'+j; pc[id]=B3(id,xa,yb+3,z0+lp/2-2,xb-xa,ht-8,4,'p'); pt.push(id); } pt.unshift('pf');
       P.push({nom:'Tasseau support du plateau',q:2,L:Li,l:10,t:'m',sec:'6 × 10'},{nom:'Fond du plateau (contreplaqué 3 mm)',q:1,L:Lp,l:lp,e:3,t:'p'},
         {nom:'Bord du plateau',q:2,L:Lp,l:ht-3,e:tw,t:'p'},{nom:'Bord du plateau',q:2,L:lp-2*tw,l:ht-3,e:tw,t:'p'},{nom:'Petite cloison',q:tx-1,L:lp-2*tw,l:ht-8,e:4,t:'p'},{nom:'Petite cloison',q:1,L:Lp-2*tw,l:ht-8,e:4,t:'p'});
       info.push(`Plateau : ${2*tx} petites cases de ${cm(ht-3)} cm de haut`); }
@@ -3878,6 +3879,175 @@ TOOLS['o-jmurale']={nom:'Jardinière murale',aide:'Un petit bac à lattes devant
     const out=meuble({...v,e,mat:'ext'},{m3d:{pc,st,cotes:{W,H:Ht,D:Pm+2*e}},titre:'Jardinière murale',pieces:P,q:Q,notes,warns,info:[`${cm(W)} cm de large, ${cm(Ht)} cm de haut`,`Bac intérieur : ${cm(W)} × ${cm(Pm)} cm, ${cm(hb-e)} cm de profondeur`],vis:false,
       vue:vueAuto(Object.values(pc),'z',{titre:'Vue de face',sauf:['tr','tro']})});
     return {...out,big:`Jardinière murale ${cm(W)} × ${cm(Ht)} cm`};
+  }};
+
+
+/* ============ JARDIN : ABRI À INSECTES ============ */
+TEINTE.paille=[46,62,70]; TEINTE.bam=[48,40,64]; TEINTE.cone=[22,45,32]; TEINTE.bri=[12,52,52]; TEINTE.eco=[26,32,42]; TEINTE.buche=[32,42,58];
+const INS_MAT={buche:['Bûche de bois dur percée','abeilles et guêpes solitaires','trous de Ø 3 à 10 mm, 10 cm de profondeur, non traversants, bien lisses'],
+  bam:['Tiges creuses (bambou, roseau, sureau)','abeilles solitaires (osmies)','coupées juste derrière un nœud, serrées dans la case'],
+  cone:['Pommes de pin et écorces','coccinelles, perce-oreilles, araignées','tassées pour ne pas tomber'],
+  paille:['Paille ou foin','chrysopes, qui mangent les pucerons','bien tassé, tenu par un grillage'],
+  bri:['Brique creuse bourrée de terre et de paille','abeilles maçonnes','coupée à la largeur de la case'],
+  eco:['Petit bois et branchettes','carabes, coccinelles, perce-oreilles','branches de 1 à 3 cm, coupées à la profondeur']};
+const INS_ORDRE=['buche','bam','cone','paille','bri','eco'];
+TOOLS['j-insectes']={nom:'Abri à insectes',aide:'Un « hôtel » en bois à cases, chacune remplie d’un matériau différent pour accueillir les insectes utiles du jardin : abeilles solitaires, coccinelles, chrysopes, perce-oreilles.',
+  pic:'<path d="M5 18L24 6l19 12"/><path d="M9 16v26h30V16"/><path d="M9 26h30M9 34h30M24 26v8M19 34v8M29 34v8M17 18v8M31 18v8"/><circle cx="14" cy="38" r="1.5"/><circle cx="34" cy="38" r="1.5"/>',
+  champs:[N('L','Largeur','cm',40),N('H','Hauteur du caisson (sans le toit)','cm',45),N('P','Profondeur','cm',15),N('n','Nombre de rangées de cases','',3),
+    N('e','Épaisseur des planches','mm',18),C('toit','Toit à deux pentes',true),
+    S('pose','Installation',[['pieds','Sur deux piquets plantés'],['mur','Fixé à un mur, une clôture ou un arbre']],'pieds'),N('hp','Hauteur sous l’abri','cm',40,{k:'pose',v:['pieds']}),
+    C('gr','Grillage devant (contre les oiseaux)',true)],
+  calc(v){
+    const W=clamp(v.L*10,250,1200), H=clamp(v.H*10,250,1500), Pm=clamp(v.P*10,100,300), e=clamp(v.e,15,30), n=clamp(Math.round(v.n),1,6), pied=v.pose==='pieds', y0=pied?clamp(v.hp*10,300,1000):0;
+    const pc={}, P=[], Q={}, st=[], notes=[], warns=[], info=[], Wi=W-2*e, hi=H-2*e, hr=(hi-(n-1)*e)/n, cad=[], eta=[], rem=[], toit=[], pq=[];
+    pc.cg=B3('cg',0,y0,0,e,H,Pm,'p'); pc.cd=B3('cd',W-e,y0,0,e,H,Pm,'p'); pc.ds=B3('ds',e,y0,0,Wi,e,Pm,'p'); pc.dc=B3('dc',e,y0+H-e,0,Wi,e,Pm,'p'); cad.push('cg','cd','ds','dc');
+    const ta=Math.tan(35*Math.PI/180), hk=v.toit?W/2*ta:0;
+    pc.dos=v.toit?PZ3('dos',[[0,y0],[W,y0],[W,y0+H],[W/2,y0+H+hk],[0,y0+H]],-6,6,'f'):B3('dos',0,y0,-6,W,H,6,'f');
+    let ncl=0, k0=0; const usage={};
+    for(let i=0;i<n;i++){ const yb=y0+e+i*(hr+e), k=Wi<280?1:Wi<480?(i%2?1:2):(i%2?2:3), wc=(Wi-(k-1)*e)/k;
+      if(i>0){ const id='et'+i; pc[id]=B3(id,e,yb-e,0,Wi,e,Pm,'p'); eta.push(id); }
+      for(let j=0;j<k;j++){ const xc=e+j*(wc+e);
+        if(j>0){ const id='cl'+i+'_'+j; pc[id]=B3(id,xc-e,yb,0,e,hr,Pm,'p'); eta.push(id); ncl++; }
+        const m=INS_ORDRE[(k0++)%INS_ORDRE.length], id='r'+i+'_'+j; usage[m]=(usage[m]||0)+1;
+        pc[id]=B3(id,xc+2,yb+2,8,wc-4,hr-4,Pm-22,m); rem.push(id);
+        const zf=Pm-14+0.3, dots=(cl,r,nx,ny)=>{ for(let a=0;a<nx;a++) for(let b=0;b<ny;b++){ const did=id+'d'+a+'_'+b, cx=xc+wc*(a+0.5)/nx+(b%2?wc/nx/4:0), cy=yb+hr*(b+0.5)/ny;
+          if(cx+r>xc+wc-3) continue; pc[did]=PZ3(did,rond(cx,cy,r,r,10),zf,0.5,cl); pc[did].sur=[id]; rem.push(did); } };
+        if(m==='buche') dots('o',Math.min(5,wc/20),Math.max(2,Math.round(wc/30)),Math.max(2,Math.round(hr/30)));
+        if(m==='bam') dots('o',Math.min(6,wc/16),Math.max(2,Math.round(wc/22)),Math.max(2,Math.round(hr/22)));
+        if(m==='cone') dots('o',Math.min(14,wc/7),Math.max(1,Math.round(wc/45)),Math.max(1,Math.round(hr/45)));
+        if(m==='eco') dots('buche',Math.min(9,wc/10),Math.max(2,Math.round(wc/30)),Math.max(2,Math.round(hr/30)));
+        if(m==='bri') dots('o',Math.min(10,wc/9),Math.max(1,Math.round(wc/40)),Math.max(1,Math.round(hr/50)));
+      } }
+    if(v.toit){ const yT=y0+H, ov=40, t=e/Math.cos(35*Math.PI/180), yb=yT-ov*ta;
+      pc.gf=PZ3('gf',[[e,yT+2],[W-e,yT+2],[W/2,yT+hk-t-4]],8,Pm-22,'cone'); rem.push('gf');
+      pc.t1=PZ3('t1',[[W/2,yT+hk],[-ov,yb],[-ov,yb+t],[W/2,yT+hk+t]],-12,Pm+42,'m'); pc.t2=PZ3('t2',[[W/2,yT+hk],[W/2,yT+hk+t],[W+ov,yb+t],[W+ov,yb]],-12,Pm+42,'m');
+      pc.t1.sur=['gf']; pc.t2.sur=['gf','t1']; toit.push('t1','t2');
+      const lp=Math.round((W/2+ov)/Math.cos(35*Math.PI/180)); P.push({nom:'Pan de toit',q:2,L:lp,l:Pm+42,e,t:'p',note:'pente 35°, déborde de 4 cm'});
+      Q['Feutre bitumé, bardeaux ou ardoises pour couvrir le toit']=`${fr(2*lp*(Pm+60)/1e6,2)} m²`; usage.cone=(usage.cone||0)+1; }
+    if(pied){ [[W*0.25,'pa'],[W*0.75,'pb']].forEach(([x,id])=>{ pc[id]=B3(id,x-22,0,Pm/2-22,45,y0,45,'m'); pq.push(id); });
+      P.push({nom:'Piquet',q:2,L:y0+500,l:45,t:'m',sec:'45 × 45',note:'50 cm enfoncés dans le sol, bout taillé en pointe'}); addQ(Q,'Vis inox 6 × 80 mm (abri sur les piquets)',4); }
+    else Q['Pour le fixer']='2 pattes de fixation et vis-chevilles (mur), ou sangle / fil de fer gainé (arbre)';
+    P.unshift({nom:'Côté',q:2,L:H,l:Pm,e,t:'p'},{nom:'Dessus et dessous',q:2,L:Wi,l:Pm,e,t:'p'});
+    if(n>1) P.push({nom:'Étagère',q:n-1,L:Wi,l:Pm,e,t:'p'}); if(ncl) P.push({nom:'Cloison',q:ncl,L:Math.round(hr),l:Pm,e,t:'p'});
+    P.push({nom:'Dos (contreplaqué extérieur 5 mm ou planches)',q:1,L:Math.round(H+hk),l:W,e:6,t:'f',note:v.toit?'haut coupé en pointe à 35°':''});
+    addQ(Q,`Vis inox ${visDe(e)}`,8+4*(n-1)+2*ncl+16+(v.toit?8:0));
+    if(v.gr) Q['Grillage à larges mailles (2 à 3 cm) et agrafes']=`${fr(W*(H+hk)/1e6*1.1,2)} m²`;
+    Object.entries(usage).forEach(([m,c])=>{ const d=INS_MAT[m]; Q[`Remplissage : ${d[0].toLowerCase()}`]=`${c} case${c>1?'s':''} (${d[2]})`; });
+    info.push(...Object.entries(usage).map(([m])=>`${INS_MAT[m][0]} → ${INS_MAT[m][1]}`));
+    st.push({t:'Le caisson',x:'Vissez le dessus et le dessous entre les deux côtés. Vérifiez l’équerre (diagonales égales).',add:cad,vis:[]},
+      {t:'Le dos',x:`Vissez ou clouez le dos derrière${v.toit?', taillé en pointe à 35° en haut':''} : c’est lui qui rigidifie le tout et retient les remplissages.`,add:['dos'],vis:[]},
+      {t:'Étagères et cloisons',x:`Vissez les étagères à ${cm(hr)} cm d’intervalle, puis les cloisons dans chaque rangée. Des cases de tailles différentes accueillent des insectes différents.`,add:eta,vis:[]});
+    if(toit.length) st.push({t:'Le toit',x:'Vissez les deux pans de toit sur les côtés et le dos, en recouvrant le haut de l’un par l’autre. Couvrez-les de feutre bitumé ou de petites ardoises : les remplissages doivent rester au sec.',add:toit,vis:[]});
+    st.push({t:'Le remplissage',x:'Remplissez chaque case d’un matériau différent, bien serré pour qu’il ne tombe pas. Percez les bûches de trous de 3 à 10 mm et 10 cm de profondeur, sans les traverser. Agrafez le grillage devant si les oiseaux viennent piller.',add:rem,vis:[]});
+    st.push({t:'L’installation',x:pied?`Plantez les 2 piquets à 50 cm de profondeur et vissez l’abri dessus, à ${cm(y0)} cm du sol.`:'Fixez l’abri au mur ou à la clôture, au moins à 30 cm du sol.',add:pq,vis:[]});
+    notes.push('Orientez l’ouverture vers le sud ou le sud-est, au soleil du matin, dos aux vents dominants et à l’abri de la pluie.',
+      'Au moins 30 cm au-dessus du sol (humidité), près de fleurs mellifères et d’un potager : les insectes ne vont pas loin pour se nourrir.',
+      'Bois brut, jamais traité ni peint à l’intérieur. Pour les bûches percées : chêne, hêtre, frêne ou fruitier, pas de résineux (la résine bouche les trous).',
+      'Des trous bien lisses, sans échardes, et jamais traversants : les abeilles solitaires y pondent et ferment le trou avec de la terre.',
+      'Ne le nettoyez pas : les larves passent l’hiver dedans. Changez seulement les remplissages abîmés tous les 2 ou 3 ans, à la fin de l’été.',
+      'Ces insectes ne piquent pas (ou presque jamais) : on peut installer l’abri près d’une terrasse.');
+    if(Pm<120) warns.push('Moins de 12 cm de profondeur, les tiges et les trous sont trop courts : les abeilles solitaires veulent 10 à 15 cm.');
+    const Ht=y0+H+hk+(v.toit?e:0);
+    const out=meuble({...v,e,mat:'ext'},{m3d:{pc,st,cotes:{W,H:Ht,D:Pm}},titre:'Abri à insectes',pieces:P,q:Q,notes,warns,info,ep:-1,
+      vue:vueAuto(Object.values(pc),'z',{titre:'Vue de face'})});
+    return {...out,big:`Abri à insectes ${cm(W)} × ${cm(H)} cm · ${rem.filter(x=>/^r\d+_\d+$/.test(x)).length+(v.toit?1:0)} cases`};
+  }};
+
+/* ============ MENUISERIE : ÉTAGÈRES D'ANGLE SUR MONTANTS ET EN ÉCHELLE, TABOURET ============ */
+TOOLS['m-angle-mont']={nom:'Étagère d’angle sur montants',aide:'Une étagère qui se pose dans un coin : tablettes en triangle sur 3 montants, ou à pans coupés sur 5 montants comme un rayonnage d’angle.',
+  pic:'<path d="M24 4v40M8 10v30M40 10v30"/><path d="M8 14l16-6 16 6-16 8zM8 27l16-6 16 6-16 8zM8 40l16-6 16 6-16 8z"/>',
+  champs:[S('forme','Forme des tablettes',[['tri','Triangle, 3 montants'],['pan','À pans coupés, 5 montants']],'tri'),N('A','Longueur le long de chaque mur','cm',40),
+    N('d','Largeur des côtés (ailes)','cm',30,{k:'forme',v:['pan']}),N('H','Hauteur','cm',90),N('n','Nombre de tablettes','',3),N('s','Section des montants (carrés)','mm',30),
+    N('e','Épaisseur des tablettes','mm',18),S('mat','Matériau des tablettes',MATS,'cp')],
+  calc(v){
+    const pan=v.forme==='pan', A=clamp(v.A*10,250,1200), s=clamp(v.s,20,60), d=pan?clamp(v.d*10,120+2*s,A-60):0, H=clamp(v.H*10,300,2200), n=clamp(Math.round(v.n),1,8), e=v.e;
+    const pc={}, P=[], Q={}, st=[], notes=[], warns=[], mo=[], tb=[];
+    const pos=pan?[[0,0],[A-s,0],[A-s,d-s],[d-s,A-s],[0,A-s]]:[[0,0],[A-s,0],[0,A-s]];
+    pos.forEach(([x,z],i)=>{ const id='mo'+i; pc[id]=B3(id,x,0,z,s,H,s,'m'); mo.push(id); });
+    const R=(x0,x1,z0,z1)=>[[x0,z0],[x1,z0],[x1,z1],[x0,z1]];
+    const parts=pan?[R(s,A-s,0,s),R(0,s,s,A-s),R(A-s,A,s,d-s),R(s,d-s,A-s,A),[[s,s],[A-s,s],[A-s,d+s],[d+s,A-s],[s,A-s]]]
+      :[R(s,A-s,0,s),R(0,s,s,A-s),[[s,s],[A,s],[s,A]]];
+    const ys=Array.from({length:n},(_,i)=>n===1?H-e:Math.round(60+i*(H-e-60)/(n-1)));
+    ys.forEach((y,i)=>{ const g=[]; parts.forEach((p,k)=>{ const id='t'+i+'_'+k; pc[id]=PY3(id,p,y,e,'p'); g.push(id); }); tb.push(g); });
+    const surf=pan?A*A-(A-d)*(A-d)/2:A*A/2;
+    P.push({nom:'Montant',q:pos.length,L:H,l:s,t:'m',sec:`${s} × ${s}`},{nom:'Tablette',q:n,L:A,l:A,e,t:'p',ch:pan?2*(A-d)+Math.SQRT2*(A-d):Math.SQRT2*A,
+      note:`${pan?`pans coupés : côtés de ${cm(A)} cm, ailes de ${cm(d)} cm`:`triangle de ${cm(A)} × ${cm(A)} cm, pointes coupées`} ; entaille de ${cm(s)} × ${cm(s)} cm à chaque montant`});
+    P.push({nom:'Taquet sous tablette',q:n*pos.length,L:50,l:20,t:'t',sec:'20 × 20'});
+    addQ(Q,'Vis à bois 4 × 40 mm',n*pos.length*3); addQ(Q,'Colle à bois vinylique (flacon)',1);
+    if(H>=1000){ addQ(Q,'Équerre de fixation murale et vis-chevilles',2); notes.push('Plus d’1 m de haut : fixez le montant du coin au mur avec 2 équerres, pour qu’elle ne bascule pas.'); }
+    st.push({t:'Les tablettes',x:`Tracez les tablettes${pan?' (carré de '+cm(A)+' cm, coin avant coupé)':' (triangle, pointes recoupées)'} et découpez à chaque montant une entaille carrée de ${cm(s)} cm. Faites-les couper en magasin si vous pouvez, puis découpez les entailles à la scie sauteuse.`,add:[],vis:[]},
+      {t:'Les montants',x:`Tracez sur les montants la hauteur de chaque tablette (${ys.map(y=>cm(y)).join(' – ')} cm). Vissez et collez un taquet de 5 cm sous chaque repère, côté intérieur.`,add:mo,vis:[]});
+    tb.forEach((g,i)=>st.push({t:i===0?'Première tablette':i===n-1?'Dernière tablette':`Tablette ${i+1}`,x:i===0?'Posez la tablette du bas sur ses taquets, montants dans les entailles. Vissez par-dessous à travers les taquets (2 vis par montant).':'Même chose pour la suivante : vérifiez au niveau à bulle.',add:g,vis:[]}));
+    notes.push('Les murs ne sont jamais tout à fait d’équerre : présentez une tablette dans le coin avant de découper les autres.','Une baguette collée sur le devant des tablettes cache le chant et retient les objets.');
+    const out=meuble({...v,e},{m3d:{pc,st,cotes:{W:A,H,D:A}},titre:'Étagère d’angle',pieces:P,q:Q,notes,warns,portee:pan?d:A*0.7,
+      info:[`Surface d’une tablette : ${fr(surf/1e6*1e4,0)} cm²`,`Écart entre tablettes : ${n>1?cm(ys[1]-ys[0]-e):'—'} cm`],
+      vue:vueAuto(Object.values(pc).filter(p=>!p.id.startsWith('t')||p.id.startsWith('t0')),'y',{titre:'Tablette vue de dessus (le coin en haut à gauche)'})});
+    return {...out,big:`Étagère d’angle ${pan?'à pans coupés':'triangulaire'} · ${n} tablettes`};
+  }};
+
+TOOLS['m-angle-ech']={nom:'Étagère d’angle en échelle',aide:'Des tablettes en quart de cercle de plus en plus petites vers le haut, sur deux montants inclinés le long des murs et un montant dans le coin.',
+  pic:'<path d="M24 4v40M8 44L22 6M40 44L26 6"/><path d="M12 36q12 8 24 0M15 26q9 6 18 0M18 16q6 4 12 0"/>',
+  champs:[N('H','Hauteur','cm',160),N('R0','Rayon de la tablette du bas','cm',40),N('Rt','Rayon de la tablette du haut','cm',20),N('n','Nombre de tablettes','',5),
+    N('s','Section des montants (carrés)','mm',30),N('e','Épaisseur des tablettes','mm',18),S('mat','Matériau des tablettes',MATS,'cp')],
+  calc(v){
+    const H=clamp(v.H*10,600,2200), s=clamp(v.s,20,50), R0=clamp(v.R0*10,200,700), Rt=clamp(v.Rt*10,120,R0), n=clamp(Math.round(v.n),2,8), e=v.e;
+    const r=y=>R0+(Rt-R0)*y/H, a=Math.atan((R0-Rt)/H), w=s/Math.cos(a), pc={}, P=[], Q={}, st=[], notes=[], warns=[];
+    const ys=Array.from({length:n},(_,i)=>Math.round(80+i*(H-e-80)/(n-1))), cuts=[0,...ys.flatMap(y=>[y,y+e])].filter(y=>y<H); cuts.push(H);
+    const mg=[], md=[], tb=[];
+    for(let i=0;i<cuts.length-1;i++){ const ya=cuts[i], yb=cuts[i+1];
+      pc['g'+i]=PZ3('g'+i,[[r(ya),ya],[r(ya)+w,ya],[r(yb)+w,yb],[r(yb),yb]],0,s,'m'); mg.push('g'+i);
+      pc['d'+i]=PX3('d'+i,[[r(ya),ya],[r(ya)+w,ya],[r(yb)+w,yb],[r(yb),yb]],0,s,'m'); md.push('d'+i); }
+    pc.co=B3('co',0,0,0,s,H,s,'m');
+    ys.forEach((y,i)=>{ const rr=r(y+e);
+      const q1=Array.from({length:7},(_,j)=>{ const t=j/6*Math.PI/4; return [rr*Math.cos(t),rr*Math.sin(t)]; }), q2=Array.from({length:7},(_,j)=>{ const t=Math.PI/4+j/6*Math.PI/4; return [rr*Math.cos(t),rr*Math.sin(t)]; });
+      const ia='ta'+i, ib='tb'+i; pc[ia]=PY3(ia,[[s,0],...q1,[s,s]],y,e,'p'); pc[ib]=PY3(ib,[[s,s],...q2,[0,s]],y,e,'p'); tb.push([ia,ib]);
+      P.push({nom:`Tablette ${i+1}`,q:1,L:Math.round(rr),l:Math.round(rr),e,t:'p',ch:Math.round(Math.PI*rr/2),note:`quart de cercle de ${cm(rr)} cm de rayon, entaille de ${cm(s)} cm au coin`}); });
+    const Lm=Math.round(H/Math.cos(a)), ang=fr(a*180/Math.PI,1);
+    P.unshift({nom:'Montant incliné',q:2,L:Lm,l:s,t:'m',sec:`${s} × ${s}`,note:`bouts coupés à ${ang}° (parallèles au sol)`},{nom:'Montant du coin',q:1,L:H,l:s,t:'m',sec:`${s} × ${s}`});
+    addQ(Q,'Vis à bois 4 × 50 mm',n*6); addQ(Q,'Colle à bois vinylique (flacon)',1); addQ(Q,'Équerres de fixation murale et vis-chevilles',2);
+    st.push({t:'Les montants',x:`Coupez les deux montants inclinés à ${ang}° en haut et en bas. Tracez sur les trois montants la hauteur des tablettes : ${ys.map(y=>cm(y)).join(' – ')} cm.`,add:['co',...mg,...md],vis:[]});
+    tb.forEach((g,i)=>st.push({t:i===0?'Tablette du bas':`Tablette ${i+1}`,x:i===0?'Vissez la tablette du bas à travers les montants (vis de 4 × 50, avant-trou, colle) : une vis dans le montant du coin, une dans chaque montant incliné.':'Continuez de la même façon, de bas en haut, en vérifiant le niveau.',add:g,vis:[]}));
+    st.push({t:'Fixation',x:'Mettez l’étagère dans le coin et fixez le haut au mur avec les 2 équerres : elle ne doit pas pouvoir basculer.',add:[],vis:[]});
+    notes.push('Tracez les quarts de cercle avec un compas à ficelle, la pointe au coin de la tablette.','Les tablettes rétrécissent vers le haut : mettez les objets lourds en bas.',
+      'Pour un style « industriel » comme sur la photo : montants en tube acier peints en noir, tablettes en bois foncé.');
+    const out=meuble({...v,e},{m3d:{pc,st,cotes:{W:R0+w,H,D:R0+w}},titre:'Étagère d’angle',pieces:P,q:Q,notes,warns,
+      info:[`Tablettes de ${ys.map(y=>cm(r(y+e))).join(', ')} cm de rayon`,`Montants inclinés de ${ang}°`],
+      vue:vueAuto(Object.values(pc),'z',{titre:'Vue de face'})});
+    return {...out,big:`Étagère d’angle en échelle · ${n} tablettes`};
+  }};
+
+TOOLS['m-tabouret']={nom:'Tabouret, petit banc',aide:'Un plateau épais sur deux pieds découpés et une traverse : tabouret, marchepied ou petit banc.',
+  pic:'<path d="M5 12h38v6H5z"/><path d="M11 18v26h3c0-5 2-7 4-7s4 2 4 7h0M37 18v26h-3c0-5-2-7-4-7s-4 2-4 7"/><path d="M14 30h20"/>',
+  champs:[N('H','Hauteur','cm',40),N('L','Longueur du plateau','cm',45),N('l','Largeur du plateau','cm',26),N('e','Épaisseur des planches','mm',40),
+    S('pf','Découpe des pieds',[['arche','Arche en bas et côtés creusés (comme sur la photo)'],['arche2','Arche en bas seulement'],['droit','Droits']],'arche'),
+    S('as','Assemblage',[['tenon','Traverse à tenons traversants et coins'],['vis','Vis et colle']],'vis'),BOIS_T],
+  calc(v){
+    const H=clamp(v.H*10,200,800), L=clamp(v.L*10,250,1500), l=clamp(v.l*10,180,450), e=clamp(v.e,22,50), ov=Math.round(Math.min(70,L*0.12)), m=25, wl=l-2*m, h=H-e;
+    const pc={}, P=[], Q={}, st=[], notes=[], warns=[], pf=v.pf;
+    const prof=z0=>{ const pts=[[z0,0]], aw=wl*0.44, ah=Math.min(h*0.22,aw*0.6), c=Math.min(wl*0.12,25);
+      if(pf==='droit') pts.push([z0+wl,0]);
+      else { pts.push([z0+(wl-aw)/2,0]); for(let j=1;j<10;j++){ const t=j/10*Math.PI; pts.push([z0+wl/2-aw/2*Math.cos(t),ah*Math.sin(t)]); } pts.push([z0+(wl+aw)/2,0],[z0+wl,0]); }
+      if(pf==='arche') for(let j=1;j<10;j++){ const t=j/10; pts.push([z0+wl-c*Math.sin(Math.PI*t),h*(0.15+0.6*t)]); }
+      pts.push([z0+wl,h],[z0,h]);
+      if(pf==='arche') for(let j=9;j>=1;j--){ const t=j/10; pts.push([z0+c*Math.sin(Math.PI*t),h*(0.15+0.6*t)]); }
+      return pts; };
+    pc.pg=PX3('pg',prof(m),ov,e,'p'); pc.pd=PX3('pd',prof(m),L-ov-e,e,'p'); pc.pg.v2=pc.pd.v2={x:prof(m)};
+    const yE=Math.round(h*0.42), hE=Math.max(50,Math.round(h*0.14)), eE=Math.min(e,30);
+    pc.tr=B3('tr',ov+e,yE,l/2-eE/2,L-2*ov-2*e,hE,eE,'p');
+    pc.pl=B3('pl',0,h,0,L,e,l,'p');
+    P.push({nom:'Plateau',q:1,L,l,t:'m',sec:`${e} × ${l}`,note:'arêtes arrondies'},{nom:'Pied',q:2,L:h,l:wl,t:'m',sec:`${e} × ${Math.round(wl)}`,note:pf==='droit'?'':'découpé à la scie sauteuse (gabarit)'},
+      {nom:'Traverse',q:1,L:L-2*ov-2*e+(v.as==='tenon'?2*e+30:0),l:hE,t:'m',sec:`${eE} × ${hE}`,note:v.as==='tenon'?'tenons de 3 cm de haut qui traversent les pieds et dépassent de 15 mm':''});
+    if(v.as==='tenon'){ addQ(Q,'Coins en bois dur (pour bloquer les tenons)',2); addQ(Q,'Tourillons Ø 10 × 50 mm (plateau sur les pieds)',6); }
+    else { addQ(Q,`Vis à bois 6 × ${lStd(2*e+20)} mm`,8); Q['Bouchons de bois Ø 10 mm (cacher les vis)']=8; }
+    addQ(Q,'Colle à bois vinylique (flacon)',1); Q[v.bois==='ext'?'Saturateur ou lasure extérieure':'Vernis, huile ou cire']='1 petit pot';
+    st.push({t:'Les pieds',x:pf==='droit'?'Coupez les deux pieds à la même longueur, bien d’équerre.':`Dessinez la découpe sur un carton, reportez-la sur les deux pieds et découpez à la scie sauteuse${pf==='arche'?' : l’arche en bas et les deux côtés creusés':' : l’arche en bas (une boîte de conserve pour tracer l’arrondi)'}. Poncez les courbes à la râpe puis au papier de verre.`,add:['pg','pd'],vis:[]},
+      {t:'La traverse',x:v.as==='tenon'?'Taillez un tenon à chaque bout de la traverse, creusez les mortaises traversantes dans les pieds, collez, et enfoncez un coin dans un trait de scie de chaque tenon.':`Vissez la traverse entre les pieds, à ${cm(yE)} cm du sol : 2 vis de chaque côté, avec colle, têtes noyées et bouchées.`,add:['tr'],vis:[]},
+      {t:'Le plateau',x:`Posez le plateau à l’envers, centrez les pieds à ${cm(ov)} cm des bouts, et fixez-les (${v.as==='tenon'?'3 tourillons collés par pied':'vis par le dessus, têtes noyées et bouchées'}). Arrondissez toutes les arêtes du plateau.`,add:['pl'],vis:[]});
+    notes.push('Un tabouret doit être épais pour être stable : 35 à 45 mm, comme sur la photo.','Pour une couleur comme le tabouret vert : une lasure ou une peinture brossée, puis un vernis mat.');
+    if(H>500) warns.push('Au-delà de 50 cm, écartez davantage les pieds ou ajoutez une seconde traverse : un tabouret haut bascule facilement.');
+    const out=meuble({...v,e,mat:'massif'},{m3d:{pc,st,cotes:{W:L,H,D:l}},titre:'Tabouret',pieces:P,q:Q,notes,warns,info:[...barres(P)],
+      vue:vueAuto(Object.values(pc),'x',{titre:'Vue de côté (pied)'})});
+    return {...out,big:`Tabouret ${cm(L)} × ${cm(l)} cm, ${cm(H)} cm de haut`};
   }};
 
 function symbolesHTML(){
