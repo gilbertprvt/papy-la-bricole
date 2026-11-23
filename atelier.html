@@ -1716,7 +1716,7 @@ const FAMILLES = [
   {id:'sols',       nom:'Sols',       desc:'Carrelage, parquet, terrasse', outils:['carrelage','parquet','plinthes','terrasse']},
   {id:'maconnerie', nom:'Maçonnerie', desc:'Béton, fondations, parpaings', outils:['beton','fondations','mortier','crepi','parpaings','pente']},
   {id:'menuiserie', nom:'Menuiserie', desc:'Étagères, meubles, tables, finitions',  outils:[{g:'Étagères',outils:['m-etagere','m-murale','m-echelle','m-angle','m-angle-mont','m-angle-ech']},{g:'Meubles',outils:['m-biblio','m-bas','m-placard']},{g:'Casiers',outils:['m-casier','m-bouteilles']},{g:'Tables et tabourets',outils:['m-tbasse','m-tsalon','m-sellette','m-tabouret']},'m-etabli','finitions']},
-  {id:'jardin',     nom:'Jardin',     desc:'Nichoir, abri à insectes, table, compost', outils:[{g:'Oiseaux et insectes',outils:['j-nichoir','j-mangeoire','j-insectes']},{g:'Jardinières',outils:['j-jardiniere','j-echelle','j-gradins']},'j-terrasse','j-pique','j-compost']},
+  {id:'jardin',     nom:'Jardin',     desc:'Nichoir, abri à insectes, table, compost, poulaillers', outils:[{g:'Oiseaux et insectes',outils:['j-nichoir','j-mangeoire','j-insectes']},{g:'Jardinières',outils:['j-jardiniere','j-echelle','j-gradins']},'j-terrasse','j-pique','j-compost','j-poulailler']},
   {id:'objets',     nom:'Petits objets', desc:'Plateau tournant, boîtes, porte-clés', outils:[{g:'Cuisine',outils:['o-plateau','o-planche']},{g:'Boîtes',outils:['o-bijoux','o-tiroir','o-caisse']},{g:'Au mur',outils:['o-cles','o-jmurale']}]},
   {id:'isolation',  nom:'Isolation',  desc:'Isolants, épaisseurs', outils:['isolants','epaisseurs','isol-qte']},
   {id:'plomberie',  nom:'Plomberie',  desc:'Tuyaux, équipements, évacuations', outils:[{g:'Alimentation',outils:['tuyaux','assemblages','equipements']},'evacuations']},
@@ -3595,6 +3595,333 @@ TOOLS['j-compost']={nom:'Bac à compost',aide:'Un composteur en bois à 1, 2 ou 
       vue:vueAuto(Object.values(pc),'z',{titre:'Vue de face',sauf:ids.cv})});
     return {...out,big:`Bac à compost ${n>1?n+' compartiments':''} · ${fr(vol*1000,0)} L`.replace('  ',' ')};
   }};
+
+
+/* ============ JARDIN : POULAILLER ============ */
+/* Trois modèles :
+   - cabane sur pieds : châssis 45 × 95 sur 4 (ou 6) pieds 70 × 70, plancher et murs en contreplaqué extérieur sur 4 montants d'angle ;
+   - au sol, on entre debout : même principe, châssis 45 × 145 sur plots, montants intermédiaires aux joints des panneaux, chevrons sous le toit ;
+   - en A : cadres en triangle, cabane en haut d'un bout, parcours grillagé dessous et à côté, brancards pour le déplacer (fonction poulA plus bas).
+   Toit à une pente (haut devant) ou à deux pentes ; porte devant, trappe à guillotine et rampe, pondoirs à droite. */
+TOOLS['j-poulailler']={nom:'Poulailler',aide:'Une cabane sur pieds, une cabane au sol où l’on entre debout, ou un poulailler en A déplaçable avec son parcours grillagé. Perchoirs, pondoirs qu’on ouvre de l’extérieur pour ramasser les œufs, trappe à guillotine et rampe, grande porte pour le nettoyage. Les dimensions se calculent d’après le nombre de poules.',
+  pic:'<path d="M5 19L24 7l19 12"/><path d="M9 17v15h30V17"/><path d="M12 32v10M36 32v10"/><path d="M20 32v-9h8v9"/><path d="M9 29L3 42"/><path d="M39 21h5v8h-5"/>',
+  champs:[S('mod','Modèle',[['pieds','Cabane sur pieds'],['sol','Cabane au sol, on entre debout'],['a','En A, avec parcours grillagé, déplaçable']],'pieds'),
+    N('n','Nombre de poules','',4),
+    S('dim','Dimensions de la cabane',[['auto','Calculées d’après le nombre de poules'],['libre','Je choisis les dimensions']],'auto',{k:'mod',v:['pieds','sol']}),
+    N('L','Largeur intérieure','cm',120,[{k:'mod',v:['pieds','sol']},{k:'dim',v:['libre']}]),N('P','Profondeur intérieure','cm',80,[{k:'mod',v:['pieds','sol']},{k:'dim',v:['libre']}]),
+    N('H','Hauteur intérieure au point le plus haut','cm',110,{k:'mod',v:['pieds']}),N('Hs','Hauteur intérieure au point le plus haut','cm',200,{k:'mod',v:['sol']}),
+    N('hp','Hauteur du plancher au-dessus du sol','cm',60,{k:'mod',v:['pieds']}),
+    S('toit','Toit',[['1','Une pente (le plus simple)'],['2','Deux pentes']],'1',{k:'mod',v:['pieds','sol']}),
+    C('pond','Pondoirs accrochés dehors (on ramasse les œufs sans entrer)',true,{k:'mod',v:['pieds','sol']}),
+    N('LA','Longueur totale (cabane et parcours)','cm',250,{k:'mod',v:['a']}),C('brc','Brancards pour le soulever à deux',true,{k:'mod',v:['a']}),
+    N('e','Épaisseur du contreplaqué des murs','mm',15)],
+  calc(v){
+    if(v.mod==='a') return poulA(v);
+    const sol=v.mod==='sol', n=clamp(Math.round(v.n),2,20), e=clamp(Math.round(v.e),12,22), ef=sol?22:Math.max(18,e), deux=v.toit==='2', jh=sol?145:95;
+    let W, Pm;
+    if(v.dim==='libre'){ W=clamp(v.L*10,sol?1200:600,sol?3600:2400); Pm=clamp(v.P*10,sol?1200:500,sol?3000:1250); }
+    else if(sol){ Pm=n<=8?1250:n<=14?1800:2400; W=clamp(Math.ceil(n*0.25e6/Pm/50)*50,1250,3600); }
+    else { Pm=n<=4?800:n<=8?1000:1250; W=clamp(Math.ceil(n*0.25e6/Pm/50)*50,900,2400); }
+    const y0=sol?jh+100:clamp(v.hp*10,300,1000), yF=y0+ef, H=sol?clamp(v.Hs*10,1700,2600):clamp(v.H*10,700,1600);
+    const pc={}, P=[], Q={}, st=[], notes=[], warns=[], info=[];
+    // Dessous du toit à la profondeur z (z = 0 au dos, z = Pm devant)
+    const a1=Math.tan(15*Math.PI/180), a2=Math.tan(30*Math.PI/180), yTop=yF+H;
+    const yR=deux?(z=>yTop-a2*Math.abs(z-Pm/2)):(z=>yTop-a1*(Pm-z));
+    const bas=(za,zb)=>Math.min(yR(za),yR(zb),...(deux&&za<Pm/2&&zb>Pm/2?[yTop]:[]));
+    const ids={pi:[],ch:[],mo:[],mu:[],fa:[],po:[],pe:[],to:[],nd:[],tr:[]};
+    const put=(g,id,o)=>{ pc[id]=o; ids[g].push(id); return o; };
+
+    // 1. Pieds et châssis
+    const hpi=y0-jh, sj=`45 × ${jh}`;
+    const xs=sol?zs(0,W-200,Math.max(2,Math.ceil(W/1200)+1)):W>1500?[0,W/2-35,W-70]:[0,W-70];
+    const zp=sol?[-65,...(Pm>1800?[Pm/2-100]:[]),Pm-135]:[0,Pm-70];
+    xs.forEach((x,i)=>zp.forEach((z,j)=>{ const id='pi'+i+j; put('pi',id,sol?B3(id,x,0,z,200,hpi,200,'ca'):B3(id,x,0,z,70,hpi,70,'m')); }));
+    [[12,'lo0'],[Pm-57,'lo1']].forEach(([z,id])=>put('ch',id,B3(id,0,hpi,z,W,jh,45,'m')));
+    const ns=Math.max(2,Math.ceil(W/(sol?400:500))+1);
+    for(let i=0;i<ns;i++){ const id='so'+i; put('ch',id,B3(id,(W-45)*i/(ns-1),hpi,57,45,jh,Pm-114,'m')); }
+    if(!sol) P.push({nom:'Pied',q:2*xs.length,L:hpi,l:70,t:'m',sec:'70 × 70',note:'posé sur une dalle ou un parpaing'});
+    P.push({nom:'Longeron (devant et derrière)',q:2,L:W,l:jh,t:'m',sec:sj,note:sol?'posé sur les plots':'posé sur les pieds'},
+      {nom:'Solive',q:ns,L:Pm-114,l:jh,t:'m',sec:sj,note:sol?'entre les longerons, tous les 40 cm au plus (on marche dessus)':'entre les longerons'});
+    if(sol&&Pm>1800) warns.push('Profondeur de plus de 1,80 m : ajoutez une rangée de plots au milieu, sous les solives (elle est dessinée).');
+    // 2. Plancher
+    put('ch','pl',B3('pl',0,y0,0,W,ef,Pm,'p'));
+    P.push({nom:'Plancher',q:1,L:W,l:Pm,e:ef,t:'p',note:sol?`OSB 3 ou contreplaqué extérieur 22 mm${W>1250||Pm>2500?', en plusieurs panneaux de 250 × 125 cm joints sur les solives':''}`:''});
+
+    // 3. Montants d'angle et murs
+    [[0,0],[W-45,0],[0,Pm-45],[W-45,Pm-45]].forEach(([x,z],i)=>{ const h=bas(z,z+45)-yF, id='mo'+i; put('mo',id,B3(id,x,yF,z,45,h,45,'m')); grouper(P,'Montant d’angle','45 × 45',h,1,'haut coupé selon la pente du toit'); });
+    const hAv=bas(Pm,Pm+e)-y0, hAr=bas(-e,0)-y0;
+    const trF=W>=850, wd=sol?700:trF?clamp(W-550,300,700):clamp(W-240,300,700), xd=trF?W-100-wd:(W-wd)/2, yd=yF+(sol?100:80);
+    if(sol){ // montants aux joints des panneaux (tous les 1,25 m au plus) et de chaque côté de la porte
+      const mi=(x,z,id)=>{ const h=Math.min(bas(z,z+45),deux&&z<Pm/2+23&&z+45>Pm/2-22?yTop-108:1e9)-yF; put('mo',id,B3(id,x,yF,z,45,h,45,'m')); grouper(P,'Montant intermédiaire','45 × 45',h,1,'aux joints des panneaux et autour de la porte'); };
+      const libre=x=>(x+45<xd-60||x>xd+wd+60)&&(!trF||x>420||x+45<60);
+      for(let k=1;k<Math.ceil(W/1250);k++){ const x=k*W/Math.ceil(W/1250)-22; mi(x,0,'mia'+k); if(libre(x)) mi(x,Pm-45,'mif'+k); }
+      [[xd-45,'mpg'],[xd+wd,'mpd']].forEach(([x,id])=>mi(x,Pm-45,id));
+      for(let k=1;k<Math.ceil((Pm+2*e)/1250);k++){ const z=k*Pm/Math.ceil((Pm+2*e)/1250)-22; mi(0,z,'mig'+k); mi(W-45,z,'mid'+k); } }
+    put('mu','ar',B3('ar',0,y0,-e,W,hAr,e,'p'));
+    const cote=deux?[[-e,y0],[Pm+e,y0],[Pm+e,yR(Pm+e)],[Pm/2,yTop],[-e,yR(-e)]]:[[-e,y0],[Pm+e,y0],[Pm+e,yR(Pm+e)],[-e,yR(-e)]];
+    put('mu','cg',PX3('cg',cote,-e,e,'p')); put('mu','cd',PX3('cd',cote,W,e,'p'));
+    const hCo=Math.max(...cote.map(q=>q[1]))-y0, hCb=Math.min(yR(-e),yR(Pm+e))-y0;
+    P.push({nom:'Dos',q:1,L:Math.round(hAr),l:W,e,t:'p',note:'grille d’aération en haut'},
+      {nom:'Côté',q:2,L:Math.round(hCo),l:Pm+2*e,e,t:'p',note:deux?`haut coupé en pointe à 30° (${cm(hCb)} cm aux bords)`:`haut coupé en pente : ${cm(hCo)} cm devant, ${cm(hCb)} cm derrière`});
+    // Faîtière pour le toit à deux pentes
+    if(deux){ const yb=yTop-13-95; put('mo','fai',B3('fai',0,yb,Pm/2-22,W,95,45,'m')); P.push({nom:'Faîtière',q:1,L:W,l:95,t:'m',sec:'45 × 95',note:'encastrée dans le haut des côtés'}); }
+
+    // 4. Façade, porte, aérations
+    const yAv=y0+hAv, hd=sol?Math.min(1850,yAv-150-yd):Math.max(300,yAv-120-yd);
+    put('fa','av',B3('av',0,y0,Pm,W,hAv,e,'p'));
+    put('po','po',B3('po',xd,yd,Pm+e,wd,hd,3,'d'));
+    (sol?[0.1,0.5,0.9]:[0.15,0.85]).forEach((k,i)=>{ const id='ch'+i; put('po',id,B3(id,xd-20,yd+hd*k-12,Pm+e+3,60,24,3,'met')); pc[id].sur=['po']; });
+    put('po','lq',B3('lq',xd+wd-50,yd+hd*0.5-15,Pm+e+3,40,30,8,'met')); pc.lq.sur=['po'];
+    const wa=Math.min(400,W-200); put('fa','ae1',B3('ae1',(W-wa)/2,yAv-95,Pm+e,wa,60,1,'met')); pc.ae1.sur=['av'];
+    put('mu','ae2',B3('ae2',(W-wa)/2,y0+hAr-95,-e-1,wa,60,1,'met')); pc.ae2.sur=['ar'];
+    if(sol){ const zf=Pm/2-300, yf=Math.min(yF+1100,bas(zf,zf+600)-500); put('mu','fen',B3('fen',-e-1,yf,zf,1,400,600,'met')); pc.fen.sur=['cg']; }
+    P.push({nom:'Façade',q:1,L:Math.round(hAv),l:W,e,t:'p',note:`la porte de ${cm(wd)} × ${cm(hd)} cm se découpe dedans`},
+      {nom:'Renfort de porte',q:sol?3:2,L:wd-40,l:70,t:'m',sec:'22 × 70',note:sol?'en haut, au milieu et en bas, plus une écharpe en diagonale':'vissé à l’intérieur de la porte, en haut et en bas'});
+    if(sol) P.push({nom:'Écharpe de porte',q:1,L:Math.round(Math.hypot(wd-100,hd/2)),l:70,t:'m',sec:'22 × 70',note:'en diagonale, le bas côté charnières'},{nom:'Seuil',q:1,L:wd,l:100,t:'m',sec:'22 × 100',note:'retient la litière'});
+
+    // 5. Perchoirs (40 × 40, 25 cm par poule, 30 cm entre eux, à 40 cm du plancher)
+    const lp=W-2, nPer=Math.max(1,Math.ceil(n*250/lp)), place=sol?Math.max(1,Math.floor((Pm*0.6-300)/350)+1):Math.max(1,Math.floor((Pm-400)/300)+1), np=Math.min(nPer,place), hpe=sol?600:400, yp=yF+hpe;
+    const zMi=sol?Array.from({length:Math.max(0,Math.ceil((Pm+2*e)/1250)-1)},(_,k)=>(k+1)*Pm/Math.ceil((Pm+2*e)/1250)-22):[];
+    for(let i=0;i<np;i++){ let z=sol?300+i*350:np===1?Pm/2-20:250+i*(Pm-540)/(np-1); while(zMi.some(m=>z+60>m-5&&z-10<m+50)) z+=40; const id='pe'+i;
+      put('pe',id,B3(id,1,yp,z,lp,40,40,'m'));
+      [[0,'a'],[W-22,'b']].forEach(([x,s])=>put('pe','tq'+i+s,B3('tq'+i+s,x,yp-60,z-10,22,60,60,'m'))); }
+    P.push({nom:'Perchoir',q:np,L:lp,l:40,t:'m',sec:'40 × 40',note:'arêtes arrondies au rabot ou au papier de verre'},
+      {nom:'Taquet de perchoir',q:2*np,L:60,l:60,t:'m',sec:'22 × 60',note:'vissé sur les côtés, le perchoir posé dessus (amovible)'});
+    if(nPer>np) warns.push(`Pour ${n} poules, il faut ${fr(n*0.25,1)} m de perchoirs ; la cabane n’en loge que ${fr(np*lp/1000,1)} m. Agrandissez la cabane ou prenez moins de poules.`);
+
+    // 6. Toit
+    const ovz=sol?200:120, ovx=sol?100:60, z1=-e-ovz, z2=Pm+e+ovz, xT=-e-ovx, wT=W+2*e+2*ovx, ang=(deux?30:15)*Math.PI/180;
+    // Au sol : chevrons 45 × 95 posés sur le haut des murs, tous les 60 cm au plus, et le toit par-dessus
+    const hc=sol?95/Math.cos(ang):0, nch=Math.max(2,Math.ceil((W+2*e)/600)+1), npan=(a,b)=>Math.min(Math.ceil(a/2500)*Math.ceil(b/1250),Math.ceil(a/1250)*Math.ceil(b/2500));
+    if(sol){ for(let i=0;i<nch;i++){ const x=-e+(W+2*e-45)*i/(nch-1), id='cv'+i;
+        if(!deux) put('to',id,PX3(id,[[z1,yR(z1)],[z2,yR(z2)],[z2,yR(z2)+hc],[z1,yR(z1)+hc]],x,45,'m'));
+        else { put('to',id+'a',PX3(id+'a',[[Pm/2,yTop],[z1,yR(z1)],[z1,yR(z1)+hc],[Pm/2,yTop+hc]],x,45,'m')); put('to',id+'b',PX3(id+'b',[[Pm/2,yTop],[Pm/2,yTop+hc],[z2,yR(z2)+hc],[z2,yR(z2)]],x,45,'m')); } }
+      P.push({nom:'Chevron',q:deux?2*nch:nch,L:Math.round((deux?Pm/2+e+ovz:z2-z1)/Math.cos(ang)),l:95,t:'m',sec:'45 × 95',note:'posé sur le haut des murs, tous les 60 cm au plus'}); }
+    let surfT;
+    if(!deux){ const tv=ef/Math.cos(15*Math.PI/180), lT=Math.round((z2-z1)/Math.cos(15*Math.PI/180)), y1=yR(z1)+hc, y2=yR(z2)+hc;
+      put('to','toit',PX3('toit',[[z1,y1],[z2,y2],[z2,y2+tv],[z1,y1+tv]],xT,wT,'m'));
+      P.push({nom:'Toit',q:1,L:Math.round(wT),l:lT,e:ef,t:'p',note:`pente 15°, déborde de ${cm(ovz)} cm devant et derrière, ${cm(ovx)} cm sur les côtés${npan(wT,lT)>1?` ; en ${npan(wT,lT)} panneaux de 250 × 125 cm, joints sur ${sol?'les chevrons':'une solive de toit 45 × 45'}`:''}`});
+      surfT=wT*lT/1e6; }
+    else { const tv=ef/Math.cos(30*Math.PI/180), lT=Math.round((Pm/2+e+ovz)/Math.cos(30*Math.PI/180)), yt=yTop+hc, y1=yR(z1)+hc, y2=yR(z2)+hc;
+      put('to','t1',PX3('t1',[[Pm/2,yt],[z1,y1],[z1,y1+tv],[Pm/2,yt+tv]],xT,wT,'m'));
+      put('to','t2',PX3('t2',[[Pm/2,yt],[Pm/2,yt+tv],[z2,y2+tv],[z2,y2]],xT,wT,'m')); pc.t2.sur=['t1'];
+      P.push({nom:'Pan de toit',q:2,L:Math.round(wT),l:lT,e:ef,t:'p',note:`pente 30°, déborde de ${cm(ovz)} cm en bas et ${cm(ovx)} cm sur les côtés${npan(wT,lT)>1?` ; chaque pan en ${npan(wT,lT)} panneaux de 250 × 125 cm, joints sur les chevrons`:''}`});
+      surfT=2*wT*lT/1e6; Q['Faîtage (closoir) pour couvrir l’arête du toit']=`${fr(wT/1000,2)} m`; }
+    const murs=['cg','cd','ar','av',...ids.mo], chev=ids.to.filter(id=>/^cv/.test(id));
+    ids.to.forEach(id=>{ pc[id].sur=[...(pc[id].sur||[]),...murs,...(/^cv/.test(id)?[]:chev)]; });
+    Q['Couverture : plaques ondulées bitumées ou bardeaux bitumés']=`${fr(surfT*1.1,2)} m²`;
+    addQ(Q,'Clous ou vis à tête large avec rondelle pour la couverture (boîte)',1);
+
+    // 7. Pondoirs dehors, sur le côté droit (1 pour 4 poules, 30 × 30 cm)
+    let nb=0;
+    if(v.pond){ nb=clamp(Math.ceil(n/4),1,Math.max(1,Math.floor((Pm-60-e)/(300+e))));
+      const xa=W+e, xb=xa+320, Lz=nb*300+(nb+1)*e, zA=(Pm-Lz)/2, yN=yF+(sol?400:0), yB=yN-ef, k=100/(xb-xa);
+      const pente=(x0)=>[[xa,yB],[x0,yB],[x0,yN+300],[xa,yN+400]];
+      put('nd','nf',B3('nf',xa,yB,zA+e,320-e,ef,Lz-2*e,'p'));
+      put('nd','nv',B3('nv',xb-e,yB,zA+e,e,yN+300-yB,Lz-2*e,'p'));
+      put('nd','ns0',PZ3('ns0',pente(xb),zA,e,'p')); put('nd','ns1',PZ3('ns1',pente(xb),zA+Lz-e,e,'p'));
+      for(let i=1;i<nb;i++){ const id='nsp'+i; put('nd',id,PZ3(id,[[xa,yN],[xb-e,yN],[xb-e,yN+300],[xa,yN+400]],zA+e+i*300+(i-1)*e,e,'p')); }
+      const tv=ef*Math.hypot(1,k), x2=xb+30;
+      put('nd','nc',PZ3('nc',[[xa,yN+400],[x2,yN+300-30*k],[x2,yN+300-30*k+tv],[xa,yN+400+tv]],zA-15,Lz+30,'m'));
+      [0.2,0.8].forEach((q,i)=>{ const id='nch'+i; put('nd',id,B3(id,xa,yN+400+tv,zA+Lz*q-25,40,2,50,'met')); pc[id].sur=['nc']; });
+      const lC=Math.round(Math.hypot(x2-xa,130));
+      P.push({nom:'Fond de pondoir',q:1,L:Lz-2*e,l:320-e,e:ef,t:'p'},
+        {nom:'Devant de pondoir',q:1,L:Lz-2*e,l:Math.round(yN+300-yB),e,t:'p'},
+        {nom:'Côté de pondoir',q:2,L:Math.round(yN+400-yB),l:320,e,t:'p',note:`haut en pente : ${cm(yN+400-yB)} cm contre le mur, ${cm(yN+300-yB)} cm dehors`});
+      if(nb>1) P.push({nom:'Séparation de pondoir',q:nb-1,L:400,l:320-e,e,t:'p',note:'haut en pente, comme les côtés'});
+      P.push({nom:'Couvercle des pondoirs',q:1,L:Lz+30,l:lC,e:ef,t:'p',note:'déborde de 3 cm devant pour le prendre en main'});
+      ids.nd.forEach(id=>{ pc[id].sur=[...(pc[id].sur||[]),'cd',...ids.mo]; });
+      addQ(Q,'Équerres renforcées 100 mm sous les pondoirs',2); Q['Bande de caoutchouc ou de feutre bitumé (charnière étanche du couvercle)']=`${fr((Lz+30)/1000,2)} m`; }
+
+    // 8. Trappe à guillotine et rampe : en façade à gauche de la porte, ou sur le côté gauche si la cabane est étroite
+    const ht=650, ta=Math.tan(35*Math.PI/180), hl=yF/ta, tvr=22/Math.cos(35*Math.PI/180), lr=Math.round(Math.hypot(hl,yF)), nbar=Math.max(2,Math.floor(lr/150)-1);
+    if(trF){ const xT=110, zf=Pm+e, yl=z=>yF*(1-(z-zf)/hl);
+      put('tr','tp',B3('tp',xT,yF,zf,250,300,1,'o')); pc.tp.sur=['av'];
+      [[xT-30,'g0'],[xT+250,'g1']].forEach(([x,id])=>{ put('tr',id,B3(id,x,yF-20,zf,30,ht,22,'m')); pc[id].sur=['av']; });
+      put('tr','tq',B3('tq',xT,yF+290,zf+4,250,310,10,'d')); pc.tq.sur=['av','tp'];
+      put('tr','rp',PX3('rp',[[zf,yF],[zf+hl,0],[zf+hl-tvr/ta,0],[zf,yF-tvr]],xT,250,'m'));
+      for(let i=1;i<=nbar;i++){ const z=zf+hl*i/(nbar+1), id='rb'+i;
+        put('tr',id,PX3(id,[[z-10,yl(z-10)],[z+10,yl(z+10)],[z+10,yl(z+10)+15],[z-10,yl(z-10)+15]],xT,250,'m')); pc[id].sur=['rp']; }
+      if(yF-20+ht>yAv-100) warns.push('La façade est un peu basse pour une trappe ouverte en entier : augmentez la hauteur intérieure, ou faites une trappe qui pivote.'); }
+    else { const zT=Pm/2-125, yl=x=>yF*(1-(-e-x)/hl);
+      put('tr','tp',B3('tp',-e-1,yF,zT,1,300,250,'o')); pc.tp.sur=['cg'];
+      [[zT-30,'g0'],[zT+250,'g1']].forEach(([z,id])=>{ put('tr',id,B3(id,-e-22,yF-20,z,22,ht,30,'m')); pc[id].sur=['cg']; });
+      put('tr','tq',B3('tq',-e-14,yF+290,zT,10,310,250,'d')); pc.tq.sur=['cg'];
+      put('tr','rp',PZ3('rp',[[-e,yF],[-e-hl,0],[-e-hl+tvr/ta,0],[-e,yF-tvr]],zT,250,'m'));
+      for(let i=1;i<=nbar;i++){ const x=-e-hl*i/(nbar+1), id='rb'+i;
+        put('tr',id,PZ3(id,[[x-10,yl(x-10)],[x+10,yl(x+10)],[x+10,yl(x+10)+15],[x-10,yl(x-10)+15]],zT,250,'m')); pc[id].sur=['rp']; }
+      if(yR(zT)<yF+ht+20&&yR(zT+250)<yF+ht+20) warns.push('Le côté gauche est un peu bas pour une trappe ouverte en entier : augmentez la hauteur intérieure, ou faites une trappe qui pivote.'); }
+    P.push({nom:'Trappe (guillotine)',q:1,L:310,l:250,e,t:'p',note:'glisse dans les 2 glissières'},
+      {nom:'Glissière de trappe',q:2,L:ht,l:30,t:'m',sec:'22 × 30',note:'rainure de 12 mm à la défonceuse, ou un tasseau 15 × 22 recouvert d’une latte 10 × 40'},
+      {nom:'Rampe',q:1,L:lr,l:250,t:'m',sec:'22 × 250',note:'pente 35°'},
+      {nom:'Barreau de rampe',q:nbar,L:250,l:20,t:'m',sec:'15 × 20',note:'tous les 15 cm, pour que les poules ne glissent pas'});
+
+    // Quincaillerie
+    const hm=Math.max(hAv,hAr,hCo), nvM=4*2*Math.ceil(hm/150)+4*Math.ceil(W/200)+2*Math.ceil((Pm+2*e)/200)*2;
+    addQ(Q,`Vis inox ${visDe(e)} (murs sur les montants et le plancher)`,nvM+(v.pond?8*nb+16:0));
+    addQ(Q,`Vis inox ${visDe(ef)} (plancher et toit)`,2*Math.ceil((W+Pm)/150)*2+ns*4);
+    addQ(Q,sol?'Vis inox 6 × 160 mm (solives dans les longerons)':'Vis inox 6 × 100 mm (longerons sur les pieds, solives)',sol?2*ns:4*xs.length+2*ns);
+    if(sol) addQ(Q,'Équerres renforcées 90 mm et leurs vis (chevrons sur les murs)',2*nch*(deux?2:1));
+    addQ(Q,'Équerres 70 mm et leurs vis (solives)',2*ns);
+    addQ(Q,'Charnières inox 60 mm et leurs vis',(sol?0:2)+(v.pond?2:0)); if(sol) addQ(Q,'Paumelles ou pentures de porte 140 mm et leurs vis',3);
+    addQ(Q,'Loquets à verrou avec mousqueton (contre la fouine et le renard)',1+(v.pond?1:0));
+    Q['Pour la trappe']='1 piton, 1 poulie et 5 m de cordelette pour la lever depuis l’extérieur, ou une porte automatique à piles (elle s’ouvre au lever du jour et se ferme à la nuit)';
+    Q[`Grillage galvanisé maille 13 mm (aérations${sol?' et fenêtre':''})`]=`${fr(2*wa*60/1e6*1.5+0.05+(sol?0.3:0),2)} m²`;
+    if(sol) Q['Plaque de polycarbonate pour fermer la fenêtre l’hiver (facultatif)']='60 × 40 cm';
+    Q['Lino ou plaque PVC sur le plancher (nettoyage facile)']=`${fr(W*Pm/1e6,2)} m²`;
+    addQ(Q,sol?'Plots béton ou parpaings pleins de 20 × 20 cm':'Dalles ou parpaings sous les pieds',xs.length*zp.length); if(sol) Q['Gravier sous les plots']='1 seau par plot';
+    const sExt=(2*W*(hAv+hAr)/2+2*(Pm+2*e)*hCo+(v.pond?0.5:0)*1e6)/1e6;
+    Q['Lasure ou peinture extérieure, 2 couches, à l’extérieur seulement']=`${fr(Math.max(0.5,sExt*2/12),1)} L pour ${fr(sExt,1)} m²`;
+    Q['Litière : copeaux de chanvre ou de lin, 5 à 10 cm']=`${fr(W*Pm*80/1e6,0)} L (environ ${Math.max(1,Math.ceil(W*Pm*80/1e6/150))} ballot${W*Pm*80/1e6>150?'s':''})`;
+
+    // Étapes de montage
+    st.push({t:sol?'Les plots et le châssis':'Les pieds et le châssis',x:`${sol?`Creusez sous chaque plot un trou de 15 cm rempli de gravier tassé, et posez les ${xs.length*zp.length} plots bien de niveau (une règle et un niveau d’un plot à l’autre). Posez les 2 longerons dessus, puis`:`Posez les ${2*xs.length} pieds sur des dalles bien de niveau. Vissez les 2 longerons sur le haut des pieds (2 vis 6 × 100 par pied), puis`} les ${ns} solives entre les longerons, avec une équerre à chaque bout. Vérifiez l’équerre : les deux diagonales doivent être égales.`,add:[...ids.pi,...ids.ch.filter(id=>id!=='pl')],vis:[]},
+      {t:'Le plancher',x:`Vissez le plancher sur les longerons et les solives, tous les 15 cm. Collez ou agrafez ensuite le lino dessus : la litière s’enlève d’un coup de raclette.`,add:['pl'],vis:[]},
+      {t:'Les montants et les murs',x:`Vissez les 4 montants d’angle debout sur le plancher${sol?', puis les montants intermédiaires : un à chaque joint de panneaux et un de chaque côté de la porte':''}. Avant de les poser, découpez ${[trF?'':'dans le côté gauche l’ouverture de la trappe (25 × 30 cm, au ras du plancher)',v.pond?`dans le côté droit ${nb>1?`${nb} ouvertures`:'l’ouverture'} de 25 × 25 cm vers ${nb>1?'les pondoirs':'le pondoir'}`:'','dans le haut du dos une fente d’aération de 40 × 6 cm (elle sera grillagée)',sol?'dans le côté gauche une fenêtre de 60 × 40 cm, grillagée elle aussi':''].filter(Boolean).join(', ').replace(/, ([^,]*)$/,' et $1')}. Vissez le dos et les 2 côtés sur les montants et sur le chant du plancher, tous les 15 cm.${deux?' Posez la faîtière dans les encoches du haut des côtés.':''}`,add:[...ids.mo,...ids.mu],vis:[]},
+      {t:'La façade et la porte',x:`Découpez la porte (${cm(wd)} × ${cm(hd)} cm) dans la façade à la scie sauteuse, en gardant la chute : c’est la porte.${trF?' Découpez aussi, à gauche, l’ouverture de la trappe : 25 × 30 cm, au ras du plancher.':''} ${sol?'Vissez la façade sur les montants, puis le seuil de 10 cm en bas de l’ouverture : il retient la litière. Vissez les 3 renforts et l’écharpe derrière la porte, et reposez-la avec 3 paumelles et un loquet à mousqueton.':'Le bas de l’ouverture reste à 8 cm du plancher pour retenir la litière. Vissez la façade, puis les 2 renforts derrière la porte, et reposez-la avec 2 charnières et un loquet à mousqueton.'} Grillagez la fente d’aération du haut.`,add:[...ids.fa,...ids.po],vis:[]},
+      {t:'Les perchoirs',x:`Vissez les taquets sur les côtés, à ${cm(hpe)} cm du plancher${sol?', dans le fond de la cabane pour laisser le passage devant':''}, et posez ${np>1?`les ${np} perchoirs`:'le perchoir'} dessus : ils s’enlèvent pour le nettoyage. Tous à la même hauteur, sinon les poules se battent pour la place du haut. (Sur le dessin, la façade est retirée pour montrer l’intérieur.)`,add:ids.pe,vis:[],cache:[...ids.fa,...ids.po]},
+      {t:'Le toit',x:`${sol?`Posez les ${deux?2*nch:nch} chevrons sur le haut des murs, tous les 60 cm au plus, avec une équerre de chaque côté du mur${deux?' et un appui sur la faîtière':''}. Vissez le toit sur les chevrons, tous les 15 cm.`:`Vissez le toit sur le haut des murs et des montants${deux?' et sur la faîtière':''}, tous les 15 cm.`} Couvrez-le de plaques ondulées ou de bardeaux bitumés${deux?', avec un closoir sur l’arête':''}, en débordant un peu pour que l’eau tombe loin des murs.`,add:ids.to,vis:[]});
+    if(v.pond) st.push({t:'Les pondoirs',x:`Assemblez la boîte des pondoirs à part : le fond, le devant, les 2 côtés${nb>1?' et les séparations':''}. Présentez-la contre le côté droit, en face des ouvertures, le fond ${sol?'à 40 cm':'au niveau'} du plancher. Vissez-la par l’intérieur de la cabane et soutenez-la dessous avec 2 équerres. Posez le couvercle avec 2 charnières et une bande de caoutchouc contre le mur pour que la pluie n’entre pas, puis un loquet à mousqueton.`,add:ids.nd,vis:[]});
+    st.push({t:'La trappe et la rampe',x:'Vissez les 2 glissières de chaque côté de l’ouverture de la trappe, glissez la trappe dedans et attachez la cordelette en haut : elle passe dans un piton et revient vers l’extérieur, où on la bloque sur un taquet. Vissez les barreaux sur la rampe tous les 15 cm et accrochez la rampe sous le seuil de la trappe avec 2 crochets : elle se décroche pour le nettoyage.',add:ids.tr,vis:[]},
+      {t:'Finitions',x:'Passez 2 couches de lasure ou de peinture à l’extérieur seulement. À l’intérieur, laissez le bois brut ou passez un lait de chaux : il éloigne les poux rouges. Mettez la litière sur le plancher et un peu de paille dans les pondoirs.',add:[],vis:[]});
+
+    // Conseils
+    const sC=W*Pm/1e6;
+    info.push(`Cabane : ${cm(W)} × ${cm(Pm)} cm, soit ${fr(sC,2)} m² pour ${n} poules`,
+      `Encombrement : ${cm(W+2*e+(v.pond?320:0)+(trF?0:hl))} × ${cm(Pm+2*e+2*ovz+(trF?hl:0))} cm, hauteur ${cm((deux?yTop:yR(z2))+hc+ef/Math.cos(ang))} cm`,
+      `${np} perchoir${np>1?'s':''} de ${cm(lp)} cm${v.pond?` · ${nb} pondoir${nb>1?'s':''} de 30 × 30 cm`:''}`,
+      `Parcours conseillé : au moins ${fr(n*10,0)} m² (10 m² par poule)`,...barres(P));
+    if(sC<n*0.25-0.01) warns.push(`Cabane trop petite : comptez au moins 25 cm × 1 m (0,25 m²) par poule, soit ${fr(n*0.25,2)} m² pour ${n} poules.`);
+    if(!sol&&H<900) warns.push('Moins de 90 cm de haut à l’intérieur, le nettoyage devient pénible : on travaille à genoux, la tête dans la cabane.');
+    if(sol&&H<1850) warns.push('Moins de 1,85 m sous le point le plus haut, il faudra se baisser pour entrer et nettoyer.');
+    if(!sol&&y0<400) warns.push('Moins de 40 cm sous le plancher, les poules ne peuvent pas s’abriter dessous et les rats s’y installent : 50 à 70 cm, c’est l’idéal.');
+    if(y0>800) notes.push('Avec des pieds de plus de 80 cm, vissez une écharpe en diagonale entre les pieds de chaque côté : la cabane ne bougera plus.');
+    if(sol) notes.push('Une cabane au sol a besoin de lumière : laissez la fenêtre grillagée ouverte de la fin du printemps à l’automne, et fermez-la avec le polycarbonate par grand froid.','Les plots sur gravier laissent passer l’air sous le plancher : il ne pourrit pas. Fermez le vide sous la cabane avec une bande de grillage enterrée, sinon les rats s’y installent.');
+    if(!v.pond) notes.push(`Sans pondoirs dehors, prévoyez quand même ${Math.ceil(n/4)} caisse${Math.ceil(n/4)>1?'s':''} de 30 × 30 cm dans la cabane, posée${Math.ceil(n/4)>1?'s':''} au sol, dans le coin le plus sombre.`);
+    notes.push('Tournez la porte et la trappe vers le sud ou le sud-est, dos aux vents dominants et à la pluie. Un coin à l’ombre l’été, au soleil l’hiver, c’est parfait.',
+      'Le renard et la fouine sont les grands dangers : fermez la trappe chaque soir (ou mettez une porte automatique), et préférez les loquets à mousqueton, que la fouine n’ouvre pas.',
+      `Le parcours : au moins 10 m² par poule (${fr(n*10,0)} m² ici), clôturé en grillage de 1,80 m. Enterrez le bas du grillage de 30 cm, ou couchez-le à plat sur 40 cm vers l’extérieur, pour que le renard ne creuse pas dessous.`,
+      'Les perchoirs doivent être plus hauts que les pondoirs, sinon les poules dorment dans les pondoirs et les salissent.',
+      'De l’air en haut (les fentes grillagées) mais pas de courant d’air au niveau des perchoirs : l’humidité rend les poules malades.',
+      'Nettoyage : retirez les fientes sous les perchoirs chaque semaine et changez toute la litière 3 ou 4 fois par an. Fientes et litière font un excellent engrais dans le bac à compost.',
+      'Déclarez vos poules à la mairie (formulaire Cerfa 15472, ou en ligne), comme le demandent les règles contre la grippe aviaire. Renseignez-vous aussi sur les distances avec les voisins : elles dépendent de votre département.');
+    const Ht=(deux?yTop+ef:yR(z2)+ef)+hc;
+    const out=meuble({...v,e,mat:'ext'},{m3d:{pc,st,cotes:{W,H:Math.round(Ht),D:Pm}},titre:'Poulailler',pieces:P,q:Q,notes,warns,info,ep:-1,
+      vue:vueAuto(Object.values(pc),'z',{titre:'Poulailler vu de face'})});
+    return {...out,big:`Poulailler ${sol?'au sol ':''}pour ${n} poules · ${cm(W)} × ${cm(Pm)} cm`};
+  }};
+
+/* Poulailler en A : cadres en triangle (chevrons 45 × 70 à 60°, base 1,30 m), longerons-brancards au sol.
+   La cabane est en haut d'un bout (plancher à 40 cm), le parcours grillagé dessous et à côté. Repère : x le long, z en travers, y vers le haut. */
+function poulA(v){
+  const n=clamp(Math.round(v.n),2,6), e=clamp(Math.round(v.e),12,22), ef=18, brc=v.brc!==false;
+  const a=60*Math.PI/180, ta=Math.tan(a), sa=Math.sin(a), ca=Math.cos(a), B=1300, Ht=B/2*ta, yb=45, t=70, dh=t/sa, dv=t/ca;
+  const hf=400, ya=yb+hf, yF=ya+ef, yA=yb+Ht, zo=y=>(y-yb)/ta, zi=y=>dh+(y-yb)/ta;
+  const zl=zo(yF)+2, wf=B-2*zl, Lc=Math.max(45+Math.ceil(n*0.25e6/wf/50)*50,365+n*250+5), Lmin=Lc+45+900;
+  const L=clamp(v.LA*10,Lmin,4000);
+  const pc={}, P=[], Q={}, st=[], notes=[], warns=[], info=[], ids={ca:[],lo:[],pl:[],in:[],co:[],pg:[],gr:[],rp:[]};
+  const put=(g,id,o)=>{ pc[id]=o; ids[g].push(id); return o; };
+  if(v.LA*10<Lmin) warns.push(`Pour ${n} poules, la cabane fait ${cm(Lc+45)} cm de long : le poulailler a été allongé à ${cm(L)} cm pour garder un parcours.`);
+  if(n>4) warns.push('Le poulailler en A convient à 2 à 4 poules : au-delà, il devient lourd à déplacer et le parcours est trop petit. Pour plus de poules, préférez la cabane sur pieds ou au sol.');
+  // Rampe en pont-levis, sous la trappe de la séparation
+  const t35=Math.tan(35*Math.PI/180), xs=Lc+45+e, hl=yF/t35, tvr=22/Math.cos(35*Math.PI/180), lr=Math.round(Math.hypot(hl,yF)), nbar=Math.max(2,Math.floor(lr/150)-1);
+  // 1. Cadres
+  const kf=Math.max(0,Math.ceil((L-45-Lc)/1200)-1), fr0=[0,Lc];
+  for(let i=1;i<=kf;i++) fr0.push(Math.max(Lc+(L-45-Lc)*i/(kf+1),xs+hl+60));
+  fr0.push(L-45);
+  const zt=dh+70/ta;
+  fr0.forEach((x,i)=>{ put('ca','cg'+i,PX3('cg'+i,[[0,yb],[B/2,yA],[B/2,yA-dv],[dh,yb]],x,45,'m'));
+    put('ca','cd'+i,PX3('cd'+i,[[B,yb],[B-dh,yb],[B/2,yA-dv],[B/2,yA]],x,45,'m'));
+    put('ca','tb'+i,B3('tb'+i,x,yb,zt,45,70,B-2*zt,'m')); });
+  const nf=fr0.length, lch=Math.round(Math.hypot(B/2,Ht));
+  P.push({nom:'Chevron des cadres en A',q:2*nf,L:lch,l:70,t:'m',sec:'45 × 70',note:'coupé à 30° en haut (les deux se rejoignent en pointe) et à 60° en bas'},
+    {nom:'Traverse basse des cadres',q:nf,L:Math.round(B-2*zt),l:70,t:'m',sec:'45 × 70',note:'au ras du sol, entre les pieds des chevrons'});
+  // 2. Longerons (brancards)
+  const x0=brc?-300:0, lL=L-x0+(brc?300:0);
+  [[0,'lo0'],[B-70,'lo1']].forEach(([z,id])=>put('lo',id,B3(id,x0,0,z,lL,45,70,'m')));
+  P.push({nom:brc?'Longeron-brancard':'Longeron',q:2,L:lL,l:70,t:'m',sec:'45 × 70',note:brc?'posé à plat, dépasse de 30 cm à chaque bout pour le porter':'posé à plat sous les cadres'});
+  // 3. Plancher et séparation
+  [[zo(ya)+3,'lb0'],[B-zo(ya)-48,'lb1']].forEach(([z,id])=>put('pl',id,B3(id,45,ya-45,z,Lc-45,45,45,'m')));
+  put('pl','pl',B3('pl',45,ya,zl,Lc-45,ef,wf,'p'));
+  put('pl','se',PX3('se',[[zi(ya),ya],[B-zi(ya),ya],[B/2,yA-dv]],Lc+45,e,'p'));
+  put('pl','tp',B3('tp',Lc+45+e,yF,B/2-100,1,250,200,'o')); pc.tp.sur=['se'];
+  P.push({nom:'Lambourde du plancher',q:2,L:Lc-45,l:45,t:'m',sec:'45 × 45',note:'le long des côtés, vissée dans les 2 cadres de la cabane'},
+    {nom:'Plancher',q:1,L:Lc-45,l:Math.round(wf),e:ef,t:'p',note:'chants coupés à 60° le long des côtés'},
+    {nom:'Séparation (triangle)',q:1,L:Math.round(yA-dv-ya),l:Math.round(B-2*zi(ya)),e,t:'p',note:'triangle ; la trappe de 20 × 25 cm se découpe au ras du plancher'});
+  // 4. Pondoir et perchoir
+  put('in','nd',B3('nd',45,yF,B/2-150,300,300,300,'p'));
+  put('in','pe',B3('pe',365,yF+150,B/2-20,Lc-365,40,40,'m'));
+  P.push({nom:'Pondoir : fond, dos et 2 côtés',q:4,L:300,l:300,e,t:'p',note:'une caisse ouverte devant, contre le pignon'},
+    {nom:'Pondoir : planchette de devant',q:1,L:300,l:100,e,t:'p',note:'retient la paille'},
+    {nom:'Perchoir',q:1,L:Lc-365,l:40,t:'m',sec:'40 × 40',note:'vissé dans le cadre de la séparation et sur un taquet derrière le pondoir ; arêtes arrondies'});
+  // 5. Côtés de la cabane (pleins)
+  const ce=e/sa, lco=Math.round((yA-ya)/sa+e);
+  put('co','pg',PX3('pg',[[zo(ya),ya],[B/2,yA],[B/2,yA+e/ca],[zo(ya)-ce,ya]],0,Lc+45,'p'));
+  put('co','pd',PX3('pd',[[B-zo(ya),ya],[B-zo(ya)+ce,ya],[B/2,yA+e/ca],[B/2,yA]],0,Lc+45,'p')); pc.pd.sur=['pg'];
+  P.push({nom:'Côté de la cabane',q:2,L:Lc+45,l:lco,e,t:'p',note:'chant du haut coupé à 30° pour la pointe, recouvert de feutre bitumé'});
+  // 6. Pignon et sa porte
+  put('pg','pi',PX3('pi',[[zo(ya)-ce,ya],[B-zo(ya)+ce,ya],[B/2,yA+e/ca]],-e,e,'p'));
+  put('pg','po',B3('po',-e-3,ya+40,B/2-200,3,300,400,'d')); pc.po.sur=['pi'];
+  [[B/2-150,'h0'],[B/2+90,'h1']].forEach(([z,id])=>{ put('pg',id,B3(id,-e-6,ya+30,z,3,30,60,'met')); pc[id].sur=['po']; });
+  put('pg','lq',B3('lq',-e-8,ya+300,B/2-20,5,40,40,'met')); pc.lq.sur=['po'];
+  P.push({nom:'Pignon de la cabane (triangle)',q:1,L:Math.round(yA-ya+e),l:Math.round(B-2*zo(ya)+2*ce),e,t:'p',note:'la porte de 40 × 30 cm se découpe dedans, pour le ramassage des œufs et le nettoyage'});
+  // 7. Grillage : fils dessinés tous les 15 cm
+  const sp=150, gid=(()=>{ let k=0; return ()=>'gr'+(k++); })();
+  for(let y=yb+90;y<yA-60;y+=sp){ const xa=y<ya?0:Lc+45+e, xb=L;
+    let id=gid(); put('gr',id,B3(id,xa,y,zo(y)-3,xb-xa,3,3,'met')); id=gid(); put('gr',id,B3(id,xa,y,B-zo(y),xb-xa,3,3,'met')); }
+  const pente=(x,y1)=>{ let id=gid(); put('gr',id,PX3(id,[[zo(yb)-3,yb],[zo(y1)-3,y1],[zo(y1),y1],[zo(yb),yb]],x,3,'met'));
+    id=gid(); put('gr',id,PX3(id,[[B-zo(yb),yb],[B-zo(y1),y1],[B-zo(y1)+3,y1],[B-zo(yb)+3,yb]],x,3,'met')); };
+  for(let x=sp/2;x<Lc+45;x+=sp) pente(x,ya); for(let x=Lc+45+sp/2;x<L;x+=sp) pente(x,yA-3*ta);
+  const pignonGr=(x,ymax)=>{ for(let y=yb+90;y<ymax;y+=sp){ const id=gid(); put('gr',id,B3(id,x,y,zo(y)+2,3,3,B-2*zo(y)-4,'met')); }
+    for(let z=zo(yb)+sp/2;z<B-zo(yb);z+=sp){ const yt=Math.min(ymax,yb+Math.min(z,B-z)*ta-6); if(yt<=yb+20) continue; const id=gid(); put('gr',id,B3(id,x,yb,z,3,yt-yb,3,'met')); } };
+  pignonGr(L,yA); pignonGr(-3,ya);
+  [[B/2-300,'gh0'],[B/2+240,'gh1']].forEach(([z,id])=>put('gr',id,B3(id,L+3,yb+20,z,4,40,60,'met')));
+  // 8. Rampe en pont-levis
+  const yl=x=>yF*(1-(x-xs)/hl);
+  put('rp','rp',PZ3('rp',[[xs,yF],[xs+hl,0],[xs+hl-tvr/t35,0],[xs,yF-tvr]],B/2-100,200,'m'));
+  for(let i=1;i<=nbar;i++){ const x=xs+hl*i/(nbar+1), id='rb'+i; put('rp',id,PZ3(id,[[x-10,yl(x-10)],[x+10,yl(x+10)],[x+10,yl(x+10)+15],[x-10,yl(x-10)+15]],B/2-100,200,'m')); pc[id].sur=['rp']; }
+  P.push({nom:'Rampe (pont-levis)',q:1,L:lr,l:200,t:'m',sec:'22 × 200',note:'charnières en haut : relevée, elle ferme la trappe'},
+    {nom:'Barreau de rampe',q:nbar,L:200,l:20,t:'m',sec:'15 × 20',note:'tous les 15 cm'});
+  grouper(P,'Cadre de la porte du parcours','27 × 40',lch-100,2,'le pignon grillagé du bout s’ouvre : c’est la porte');
+  grouper(P,'Cadre de la porte du parcours','27 × 40',Math.round(B-2*zt),1,'le pignon grillagé du bout s’ouvre : c’est la porte');
+  // Fournitures
+  const sGr=(2*(L-Lc-45)*lch+2*(Lc+45)*hf/sa+B*Ht/2+B*hf)/1e6;
+  Q['Grillage soudé galvanisé maille 13 × 13 mm (le grillage à poules hexagonal ne résiste pas au renard)']=`${fr(sGr*1.15,1)} m²`;
+  Q['Agrafes inox ou cavaliers pour le grillage (boîte)']='1';
+  Q['Feutre bitumé ou bardeaux sur les côtés de la cabane']=`${fr(2*(Lc+45)*lco/1e6*1.1,2)} m²`;
+  Q['Planche de faîtage pour couvrir la pointe (2 planches 15 × 100 vissées en V)']=`${fr((Lc+45)/1000,2)} m`;
+  addQ(Q,'Vis inox 5 × 70 mm (cadres, longerons, lambourdes)',nf*8+8);
+  addQ(Q,`Vis inox ${visDe(e)} (côtés, pignon, séparation, pondoir)`,60);
+  addQ(Q,'Équerres 50 mm et leurs vis (haut des chevrons)',nf*2);
+  addQ(Q,'Charnières inox 50 mm et leurs vis',6);
+  addQ(Q,'Loquets à verrou avec mousqueton',2);
+  Q['Pour le pont-levis']='1 piton, 1 taquet et 3 m de cordelette : on relève la rampe le soir, elle ferme la trappe';
+  if(brc) addQ(Q,'Poignées de brancard (ou simple ponçage des bouts)',4);
+  Q['Lasure ou peinture extérieure, à l’extérieur seulement']=`${fr(Math.max(0.5,(2*(Lc+45)*lco/1e6+lL*0.25/1000*2+nf*0.4)*2/12),1)} L`;
+  Q['Paille ou copeaux pour la cabane et le pondoir']='1 petit ballot';
+  // Étapes
+  st.push({t:'Les cadres en A',x:`Assemblez les ${nf} cadres à plat sur le sol : 2 chevrons coupés en pointe en haut (équerre et vis), et la traverse basse entre leurs pieds. Tracez le premier, puis faites les autres dessus pour qu’ils soient tous pareils.`,add:ids.ca,vis:[]},
+    {t:brc?'Les longerons-brancards':'Les longerons',x:`Dressez les cadres sur les 2 longerons posés à plat, aux places du dessin : 2 cadres pour la cabane (${cm(Lc+45)} cm d’axe en axe), puis tous les 1,20 m au plus, et un au bout. Vissez chaque pied de chevron dans le longeron.${brc?' Les longerons dépassent de 30 cm à chaque bout : ce sont les brancards pour porter le poulailler à deux.':''}`,add:ids.lo,vis:[]},
+    {t:'Le plancher et la séparation',x:`Vissez les 2 lambourdes entre les cadres de la cabane, à ${cm(hf)} cm du sol, puis le plancher dessus. Découpez la trappe de 20 × 25 cm au ras du plancher dans la séparation et vissez-la contre le cadre, côté parcours.`,add:ids.pl,vis:[]},
+    {t:'Le pondoir et le perchoir',x:'Assemblez la caisse du pondoir et posez-la contre le bout, ouverte vers la séparation. Vissez le perchoir à 15 cm du plancher, dans l’axe, entre le pondoir et la séparation.',add:ids.in,vis:[]},
+    {t:'Les côtés de la cabane',x:'Vissez les 2 côtés pleins sur les chevrons de la cabane, de la hauteur du plancher jusqu’à la pointe. Couvrez-les de feutre bitumé et vissez la planche de faîtage en V sur la pointe : la cabane doit rester sèche.',add:ids.co,vis:[],cache:[]},
+    {t:'Le pignon et sa porte',x:'Découpez la porte (40 × 30 cm) dans le pignon, vissez le pignon sur le cadre du bout et reposez la porte avec 2 charnières en bas : elle s’ouvre en abattant, pour ramasser les œufs et sortir la litière. Un loquet à mousqueton en haut.',add:ids.pg,vis:[]},
+    {t:'Le grillage',x:'Agrafez le grillage sur tout le reste : les deux pentes du parcours, le dessous de la cabane et le bout. Le pignon grillagé du bout se monte sur un cadre de tasseaux 27 × 40 avec 2 charnières en bas : c’est la porte du parcours. Tendez bien le grillage et rabattez les bouts coupés vers l’intérieur du bois.',add:ids.gr,vis:[]},
+    {t:'La rampe en pont-levis',x:'Vissez les barreaux sur la rampe, puis fixez-la sous la trappe avec 2 charnières. Attachez une cordelette au bout de la rampe : elle passe dans un piton au-dessus de la trappe et sort par le grillage. Le soir, on tire la cordelette : la rampe remonte et ferme la trappe.',add:ids.rp,vis:[]});
+  info.push(`Longueur ${cm(L)} cm${brc?` (${cm(lL)} cm avec les brancards)`:''}, largeur ${cm(B)} cm, hauteur ${cm(yA+e)} cm`,
+    `Cabane : ${cm(Lc-45)} × ${cm(wf)} cm au plancher, soit ${fr((Lc-45)*wf/1e6,2)} m² pour ${n} poules`,
+    `Parcours grillagé : ${fr(B*L/1e6,1)} m² au sol`,`1 pondoir de 30 × 30 cm · 1 perchoir de ${cm(Lc-365)} cm`,...barres(P));
+  if(xs+hl>L-100) warns.push('La rampe touche le bout du poulailler : allongez-le un peu.');
+  notes.push('Déplacez-le tous les 2 ou 3 jours sur de l’herbe fraîche : les poules mangent l’herbe et les insectes, et fertilisent le sol. Toujours sur un sol plat, sinon un renard passe sous les longerons.',
+    `Le parcours grillagé (${fr(B*L/1e6,1)} m²) est petit : c’est un abri de sécurité, pas un parcours pour toute la journée. Laissez les poules sortir dans le jardin quand vous êtes là.`,
+    'Le soir, relevez le pont-levis : les poules sont enfermées dans la cabane et le renard ne peut plus entrer, même s’il creuse sous le grillage.',
+    'Mettez-le à l’ombre l’été : sous le grillage, il fait vite très chaud. Une bâche sur le haut d’une pente du parcours fait de l’ombre et abrite de la pluie.',
+    'Bois brut à l’intérieur, lasure ou peinture à l’extérieur seulement. Agrafes inox : elles ne rouillent pas.',
+    'Déclarez vos poules à la mairie (formulaire Cerfa 15472, ou en ligne), comme le demandent les règles contre la grippe aviaire.');
+  const out=meuble({...v,e,mat:'ext'},{m3d:{pc,st,cotes:{W:L,H:Math.round(yA+e),D:B}},titre:'Poulailler en A',pieces:P,q:Q,notes,warns,info,ep:-1,
+    vue:vueAuto(Object.values(pc),'x',{titre:'Poulailler en A vu du bout',sauf:ids.gr})});
+  return {...out,big:`Poulailler en A pour ${n} poules · ${cm(L)} cm de long`};
+}
 
 
 /* ============ PETITS OBJETS ============ */
