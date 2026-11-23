@@ -1716,7 +1716,7 @@ const FAMILLES = [
   {id:'sols',       nom:'Sols',       desc:'Carrelage, parquet, terrasse', outils:['carrelage','parquet','plinthes','terrasse']},
   {id:'maconnerie', nom:'Maçonnerie', desc:'Béton, fondations, parpaings', outils:['beton','fondations','mortier','crepi','parpaings','pente']},
   {id:'menuiserie', nom:'Menuiserie', desc:'Étagères, meubles, tables, finitions',  outils:[{g:'Étagères',outils:['m-etagere','m-murale','m-echelle','m-angle','m-angle-mont','m-angle-ech']},{g:'Meubles',outils:['m-biblio','m-bas','m-placard']},{g:'Casiers',outils:['m-casier','m-bouteilles']},{g:'Tables et tabourets',outils:['m-tbasse','m-tsalon','m-sellette','m-tabouret']},'m-etabli','finitions']},
-  {id:'jardin',     nom:'Jardin',     desc:'Nichoir, abri à insectes, table, compost, poulaillers', outils:[{g:'Oiseaux et insectes',outils:['j-nichoir','j-mangeoire','j-insectes']},{g:'Jardinières',outils:['j-jardiniere','j-echelle','j-gradins']},'j-terrasse','j-pique','j-compost','j-poulailler']},
+  {id:'jardin',     nom:'Jardin',     desc:'Nichoir, abri à insectes, table, compost, poulaillers, balançoires', outils:[{g:'Oiseaux et insectes',outils:['j-nichoir','j-mangeoire','j-insectes']},{g:'Jardinières',outils:['j-jardiniere','j-echelle','j-gradins']},'j-terrasse','j-pique','j-compost','j-poulailler','j-balancoire']},
   {id:'objets',     nom:'Petits objets', desc:'Plateau tournant, boîtes, porte-clés', outils:[{g:'Cuisine',outils:['o-plateau','o-planche']},{g:'Boîtes',outils:['o-bijoux','o-tiroir','o-caisse']},{g:'Au mur',outils:['o-cles','o-jmurale']}]},
   {id:'isolation',  nom:'Isolation',  desc:'Isolants, épaisseurs', outils:['isolants','epaisseurs','isol-qte']},
   {id:'plomberie',  nom:'Plomberie',  desc:'Tuyaux, équipements, évacuations', outils:[{g:'Alimentation',outils:['tuyaux','assemblages','equipements']},'evacuations']},
@@ -3921,6 +3921,162 @@ function poulA(v){
   const out=meuble({...v,e,mat:'ext'},{m3d:{pc,st,cotes:{W:L,H:Math.round(yA+e),D:B}},titre:'Poulailler en A',pieces:P,q:Q,notes,warns,info,ep:-1,
     vue:vueAuto(Object.values(pc),'x',{titre:'Poulailler en A vu du bout',sauf:ids.gr})});
   return {...out,big:`Poulailler en A pour ${n} poules · ${cm(L)} cm de long`};
+}
+
+
+/* ============ JARDIN : BALANÇOIRE ============ */
+/* Trois modèles :
+   - portique en A pour enfants : 2 chevalets en A (pieds 95 × 95 inclinés de 20°), une poutre dessus, 1 à 3 balançoires ;
+   - banc balançoire pour 2 adultes : même portique, plus solide, et un banc à dossier suspendu par 4 chaînes ;
+   - siège à accrocher à une branche : une planche, deux cordes et deux sangles d'arbre.
+   Repère : x le long de la poutre, z en travers (vers l'avant), y vers le haut. */
+TOOLS['j-balancoire']={nom:'Balançoire',aide:'Trois modèles : un portique en A pour 1 à 3 balançoires d’enfants, un banc balançoire pour 2 adultes, ou un simple siège à accrocher à une branche. Le calculateur place les sièges aux bons écartements et donne les longueurs de cordes.',
+  pic:'<path d="M6 42L14 8l8 34M26 42l8-34 8 34"/><path d="M10 8h28"/><path d="M19 8v22M29 8v22"/><path d="M17 30h14"/>',
+  champs:[S('mod','Modèle',[['portique','Portique en A pour enfants'],['banc','Banc balançoire pour 2 adultes'],['arbre','Siège à accrocher à une branche']],'portique'),
+    N('np','Nombre de balançoires','',2,{k:'mod',v:['portique']}),
+    S('siege','Sièges',[['planche','Planches de bois'],['souple','Sièges souples en caoutchouc (plus doux pour les petits)'],['bebe','Un siège bébé, les autres en planche']],'planche',{k:'mod',v:['portique']}),
+    N('H','Hauteur sous la poutre','cm',200,{k:'mod',v:['portique','banc']}),
+    N('hb','Hauteur de la branche','cm',300,{k:'mod',v:['arbre']}),
+    S('pour','Pour qui',[['enfant','Un enfant'],['adulte','Un adulte ou un grand enfant']],'enfant',{k:'mod',v:['arbre']})],
+  calc(v){ return v.mod==='arbre'?balArbre(v):balPortique(v); }};
+
+function balPortique(v){
+  const banc=v.mod==='banc', n=banc?1:clamp(Math.round(v.np),1,3);
+  const pc={}, P=[], Q={}, st=[], notes=[], warns=[], info=[], ids={pi:[],po:[],ac:[],si:[],an:[]};
+  const put=(g,id,o)=>{ pc[id]=o; ids[g].push(id); return o; };
+  const yb=clamp(v.H*10,banc?1900:1800,banc?2400:2600), ys=banc?450:400, Lr=yb-ys;
+  // Écartements conseillés : 20 % de la longueur des cordes + 30 cm entre deux sièges, + 20 cm contre un pied
+  const r10=x=>Math.round(x/10)*10, eG=r10(0.2*Lr+300), eP=r10(0.2*Lr+200), wS=banc?1200:450, wC=banc?1200:500;
+  const Lin=banc?wC+2*400:2*eP+n*wC+(n-1)*eG;
+  // Section de la poutre selon la portée entre les chevalets
+  const port=Lin+95, bh=banc?220:port<=2000?195:220, bw=banc||port>3000?120:95, sp=`${bw} × ${bh}`;
+  const ang=20*Math.PI/180, wl=95/Math.cos(ang), Dz=2*(yb*Math.tan(ang)+wl), zc=Dz/2, H=yb+bh;
+  const zlo=y=>y*(zc-wl)/yb; // bord extérieur du pied gauche à la hauteur y
+  // 1. Chevalets en A
+  [[0,'a'],[Lin+95,'b']].forEach(([x,s])=>{
+    put('pi','pg'+s,PX3('pg'+s,[[0,0],[wl,0],[zc,yb],[zc-wl,yb]],x,95,'m'));
+    put('pi','pd'+s,PX3('pd'+s,[[Dz,0],[zc+wl,yb],[zc,yb],[Dz-wl,0]],x,95,'m'));
+    const ye=Math.round(yb*0.35), xe=s==='a'?-45:Lin+190, ze=zlo(ye+95)-10;
+    put('pi','en'+s,B3('en'+s,xe,ye,ze,45,95,Dz-2*ze,'m')); });
+  const lpi=Math.round(yb/Math.cos(ang)), len=Math.round(Dz-2*zlo(Math.round(yb*0.35)+95)+20);
+  P.push({nom:'Pied',q:4,L:lpi,l:95,t:'m',sec:'95 × 95',note:'coupé à 20° en haut et en bas ; bois classe 4 (autoclave) ou douglas, mélèze'},
+    {nom:'Entretoise de chevalet',q:2,L:len,l:95,t:'m',sec:'45 × 95',note:`à ${cm(yb*0.35)} cm du sol, boulonnée sur les 2 pieds, côté extérieur`});
+  // 2. Poutre
+  const ov=150; put('po','pou',B3('pou',-ov,yb,zc-bw/2,Lin+190+2*ov,bh,bw,'m'));
+  [[0,'fa'],[Lin+95,'fb']].forEach(([x,id])=>{ put('po',id,B3(id,x-8,yb-160,zc-wl-8,111,160,2*wl+16,'met')); pc[id].sur=['pga','pda','pgb','pdb','pou']; });
+  P.push({nom:'Poutre',q:1,L:Lin+190+2*ov,l:bh,t:'m',sec:sp,note:`lamellé-collé ou douglas classe 3, posée sur chant ; dépasse de ${cm(ov)} cm de chaque côté`});
+  // Ancrages
+  [[0,0],[0,Dz-wl],[Lin+95,0],[Lin+95,Dz-wl]].forEach(([x,z],i)=>put('an','an'+i,B3('an'+i,x+10,0,z+(z?0:-40),75,60,wl+40,'met')));
+  // 3. Crochets, cordes et sièges
+  const xs0=95+(banc?400:eP), hk=(x,id)=>{ put('ac',id,B3(id,x-20,yb-40,zc-25,40,40,50,'met')); pc[id].sur=['pou']; };
+  if(!banc){
+    for(let i=0;i<n;i++){ const x0=xs0+i*(wC+eG), xm=x0+wC/2, bebe=v.siege==='bebe'&&i===0, souple=v.siege==='souple';
+      hk(x0+25,'k'+i+'a'); hk(x0+wC-25,'k'+i+'b');
+      [x0+25,x0+wC-25].forEach((x,j)=>put('si','c'+i+j,B3('c'+i+j,x-6,ys+(bebe?250:0),zc-6,12,yb-40-ys-(bebe?250:0),12,'met')));
+      if(bebe){ put('si','s'+i,B3('s'+i,xm-200,ys-30,zc-170,400,280,340,'d'));
+        put('si','sb'+i,B3('sb'+i,xm-200,ys+50,zc+150,400,40,20,'d')); pc['sb'+i].sur=['s'+i]; }
+      else put('si','s'+i,B3('s'+i,xm-wS/2,ys-(souple?20:30),zc-(souple?100:90),wS,souple?20:30,souple?200:180,souple?'d':'m')); }
+    const nPl=v.siege==='planche'?n:v.siege==='bebe'?n-1:0;
+    if(nPl) P.push({nom:'Siège (planche)',q:nPl,L:450,l:180,t:'m',sec:'30 × 180',note:'chêne, hêtre ou frêne ; 4 trous de 18 mm, angles et arêtes bien arrondis'});
+    if(v.siege==='souple') addQ(Q,'Sièges souples de balançoire (sangle caoutchouc)',n);
+    if(v.siege==='bebe') addQ(Q,'Siège bébé (nacelle) avec ceinture, jusqu’à 3 ans environ',1);
+    const lc=Math.ceil((2*(yb-ys)/1000+1.2)*10)/10;
+    Q['Corde polypropylène tressée Ø 16 mm (ou chaîne plastifiée)']=`${fr(lc*n,1)} m (${fr(lc,1)} m par balançoire)`;
+    addQ(Q,'Crochets de balançoire à roulement, avec boulon traversant M10 ou M12',2*n);
+    addQ(Q,'Maillons rapides inox Ø 8 mm (entre crochet et corde)',2*n);
+  } else {
+    // Banc : assise 120 × 48 cm, dossier incliné, accoudoirs, suspendu par 4 chaînes réunies 2 par 2
+    const x0=xs0, x1=x0+wC, zf=zc+240, zr=zc-240, yB=ys-117, yD=ys+500, lean=130;
+    const zpo=y=>zr-lean*(y-yB)/(yD-yB);
+    [[x0+45,'lg'],[x1-90,'ld']].forEach(([x,id])=>put('si',id,B3(id,x,yB,zr,45,95,zf-zr,'m')));
+    for(let i=0;i<5;i++){ const id='la'+i; put('si',id,B3(id,x0+45,ys-22,zr+i*(480-95)/4,wC-90,22,95,'m')); }
+    [[x0,'g'],[x1-45,'d']].forEach(([x,s])=>{
+      put('si','pr'+s,PX3('pr'+s,[[zr,yB],[zr+45,yB],[zpo(yD)+45,yD],[zpo(yD),yD]],x,45,'m'));
+      put('si','pv'+s,B3('pv'+s,x,yB,zf-45,45,ys+230-yB,45,'m'));
+      const za=zpo(ys+275)+46; put('si','ac'+s,B3('ac'+s,x-5,ys+230,za,55,45,zf+30-za,'m')); });
+    [[ys+120,'d0'],[ys+250,'d1'],[ys+380,'d2']].forEach(([y,id])=>{ const y2=y+95;
+      put('si',id,PX3(id,[[zpo(y)+45,y],[zpo(y)+67,y],[zpo(y2)+67,y2],[zpo(y2)+45,y2]],x0+45,wC-90,'m')); });
+    const yr=ys+1000;
+    [[x0+18,'g'],[x1-27,'d']].forEach(([x,s])=>{ hk(x+5,'k'+s);
+      put('si','cv'+s,B3('cv'+s,x,yr,zc-5,9,yb-40-yr,9,'met'));
+      const za=zpo(ys+275)+56;
+      put('si','cf'+s,PX3('cf'+s,[[zf+15,ys+275],[zf+24,ys+275],[zc+4,yr],[zc-5,yr]],x,9,'met'));
+      put('si','cr'+s,PX3('cr'+s,[[za,ys+275],[za+9,ys+275],[zc+4,yr],[zc-5,yr]],x,9,'met')); });
+    const lpr=Math.round(Math.hypot(lean,yD-yB));
+    P.push({nom:'Côté d’assise',q:2,L:480,l:95,t:'m',sec:'45 × 95'},
+      {nom:'Latte d’assise',q:5,L:wC-90,l:95,t:'m',sec:'22 × 95',note:'arêtes arrondies, 5 mm entre les lattes'},
+      {nom:'Montant de dossier',q:2,L:lpr,l:45,t:'m',sec:'45 × 45',note:'incliné de 13° vers l’arrière'},
+      {nom:'Latte de dossier',q:3,L:wC-90,l:95,t:'m',sec:'22 × 95'},
+      {nom:'Pied avant d’accoudoir',q:2,L:Math.round(ys+230-yB),l:45,t:'m',sec:'45 × 45'},
+      {nom:'Accoudoir',q:2,L:Math.round(zf+30-zpo(ys+275)-46),l:55,t:'m',sec:'45 × 55',note:'les chaînes s’accrochent à ses deux bouts'});
+    Q['Chaîne galvanisée de 6 mm (charge 300 kg au moins)']=`${fr(2*((yb-40-yr)+2*Math.hypot(240,yr-ys-275))/1000+0.5,1)} m`;
+    addQ(Q,'Crochets de balançoire à roulement, boulon traversant M12',2);
+    addQ(Q,'Anneaux de réunion (3 chaînes sur un anneau)',2);
+    addQ(Q,'Pitons à œil M10 traversants avec écrou, pour accrocher les chaînes au banc',4);
+    addQ(Q,'Maillons rapides inox Ø 8 mm',6);
+    addQ(Q,'Vis inox 5 × 50 mm (lattes)',40); addQ(Q,'Boulons M8 × 100 mm (assemblage du banc)',8);
+    Q['Coussins d’extérieur pour l’assise et le dossier (facultatif)']='120 × 48 cm et 120 × 40 cm';
+  }
+  // Fournitures du portique
+  addQ(Q,'Têtes de portique en acier galvanisé (tiennent la poutre et les 2 pieds)',2);
+  addQ(Q,'Tiges filetées M12, écrous et larges rondelles (entretoises et têtes de portique)',banc?8:6);
+  addQ(Q,'Ancrages à visser dans le sol (« tire-bouchons ») ou platines sur plots béton',4);
+  Q['Lasure ou huile pour bois extérieur']=`${fr(Math.max(0.5,((4*lpi*0.38+(Lin+490)*0.63)/1e3)*2/10+(banc?0.5:0)),1)} L`;
+  // Étapes
+  st.push({t:'Les chevalets en A',x:`Coupez les 4 pieds à 20° en haut et en bas. Assemblez chaque paire à plat sur le sol : les deux têtes dans la tête de portique en acier, puis l’entretoise boulonnée à ${cm(yb*0.35)} cm du sol, côté extérieur. Mesurez l’écartement des pieds au sol : ${cm(Math.round(Dz/10)*10)} cm pour les deux chevalets.`,add:ids.pi,vis:[]},
+    {t:'La poutre',x:`À deux, dressez les chevalets à ${cm(Lin)} cm l’un de l’autre (de l’intérieur à l’intérieur). Posez la poutre sur chant dans les têtes de portique et boulonnez. Vérifiez au niveau : la poutre doit être bien horizontale.`,add:ids.po,vis:[]},
+    {t:banc?'Les crochets et le banc':'Les crochets et les sièges',x:banc?'Percez la poutre et posez les 2 crochets à roulement, boulons traversants. Assemblez le banc à plat : les côtés d’assise, les lattes, les montants de dossier, les pieds d’accoudoir et les accoudoirs. Vissez un piton à chaque bout d’accoudoir, puis accrochez les chaînes : deux par côté, réunies sur un anneau, et une chaîne de l’anneau au crochet. Réglez pour que l’assise soit à 45 cm du sol et bien horizontale.':`Percez la poutre et posez ${2*n} crochets à roulement, boulons traversants, aux places du dessin : ${cm(wC-50)} cm entre les deux crochets d’une balançoire, ${cm(eG)} cm entre deux balançoires. Passez les cordes dans les sièges et réglez-les pour que le dessous du siège soit à ${cm(ys)} cm du sol au moins.`,add:ids.si.concat(ids.ac),vis:[]},
+    {t:'L’ancrage au sol',x:'Vissez un ancrage au pied de chaque montant (ou scellez une platine dans un plot de béton) et boulonnez-le au pied. Sans ancrage, le portique peut basculer quand on se balance fort.',add:ids.an,vis:[]});
+  // Conseils
+  info.push(`Portique : ${cm(Lin+190+2*ov)} cm de long (poutre), ${cm(Math.round(Dz/10)*10)} cm d’écartement au sol, ${cm(Math.round(H/10)*10)} cm de haut`,
+    banc?`Banc de ${cm(wC)} cm, assise à ${cm(ys)} cm du sol`:`${n} balançoire${n>1?'s':''} · ${cm(eG)} cm entre deux sièges, ${cm(eP)} cm entre un siège et un pied`,
+    `Zone à laisser libre : ${cm(Lin+190+2*ov+3000)} × ${cm(Dz+2*Math.max(2000,Lr+500))} cm environ`,...barres(P));
+  if(!banc&&n===3) warns.push(`Une poutre de ${fr((Lin+190+2*ov)/1000,2)} m ne se trouve pas partout : demandez-la en lamellé-collé chez un marchand de bois.`);
+  if(banc) warns.push('Le banc porte 2 adultes : n’économisez pas sur la poutre, les crochets ni les chaînes. Prenez du matériel marqué pour au moins 300 kg et vérifiez-le chaque printemps.');
+  notes.push(`Laissez libre au moins ${cm(Math.max(2000,(yb-ys)+500))} cm devant et derrière, dans le sens du balancement, et 1,50 m sur les côtés : pas de mur, d’arbre, d’allée ni de mobilier.`,
+    'Sous la balançoire, un sol souple : gazon, copeaux ou écorces sur 20 cm d’épaisseur. Jamais de béton, de dalles ni de cailloux.',
+    'Arrondissez toutes les arêtes et noyez les têtes de boulons ou couvrez-les de cache-écrous en plastique : pas d’arête vive ni de bout de tige qui dépasse.',
+    'Bois en contact avec le sol : classe 4 (autoclave), ou pieds posés sur des platines. Ne plantez pas les pieds directement dans la terre, ils pourriraient.',
+    'Chaque printemps, vérifiez les cordes (usure, effilochage), les crochets, les boulons et les ancrages. Changez une corde dès qu’elle s’use.',
+    ...(banc?[]:['Pour les tout-petits : siège bébé avec ceinture, et toujours un adulte à côté.']));
+  const out=meuble({...v,e:22,mat:'ext'},{m3d:{pc,st,cotes:{W:Lin+190,H:Math.round(H),D:Math.round(Dz)}},titre:banc?'Banc balançoire':'Portique de balançoire',pieces:P,q:Q,notes,warns,info,ep:-1,
+    vue:vueAuto(Object.values(pc),'z',{titre:'Vue de face'})});
+  return {...out,big:banc?`Banc balançoire pour 2 adultes · portique de ${cm(Lin+190+2*ov)} cm`:`Portique pour ${n} balançoire${n>1?'s':''} · ${cm(Lin+190+2*ov)} cm de long`};
+}
+
+function balArbre(v){
+  const ad=v.pour==='adulte', hb=clamp(v.hb*10,1800,6000), ys=ad?500:400, wS=ad?600:450, dS=ad?200:180, eS=ad?35:30;
+  const pc={}, P=[], Q={}, st=[], notes=[], warns=[], info=[], ids={ar:[],sa:[],si:[]};
+  const put=(g,id,o)=>{ pc[id]=o; ids[g].push(id); return o; };
+  const zc=0, xm=1400, x0=xm-wS/2-25, x1=xm+wS/2+25;
+  // Le tronc et la branche (repères)
+  put('ar','tr',B3('tr',-350,0,zc-175,350,hb+900,350,'eco'));
+  put('ar','br',B3('br',0,hb,zc-100,2600,200,200,'eco'));
+  // Sangles et mousquetons
+  [[x0,'a'],[x1,'b']].forEach(([x,s])=>{ put('sa','sg'+s,B3('sg'+s,x-25,hb-12,zc-105,50,12,210,'met')); pc['sg'+s].sur=['br'];
+    put('sa','mq'+s,B3('mq'+s,x-8,hb-80,zc-8,16,68,16,'met')); });
+  // Cordes et siège
+  [[x0,'a'],[x1,'b']].forEach(([x,s])=>put('si','c'+s,B3('c'+s,x-6,ys,zc-6,12,hb-80-ys,12,'met')));
+  put('si','s',B3('s',xm-wS/2,ys-eS,zc-dS/2,wS,eS,dS,'m'));
+  P.push({nom:'Siège',q:1,L:wS,l:dS,t:'m',sec:`${eS} × ${dS}`,note:'chêne, hêtre ou frêne ; 4 trous de 18 mm à 4 cm des bords, arêtes bien arrondies'},
+    {nom:'Tasseaux sous le siège',q:2,L:dS,l:45,t:'m',sec:'22 × 45',note:'vissés en travers dessous, à chaque bout : le siège ne se fend pas'});
+  const lc=Math.ceil((2*(hb-80-ys)/1000+1.5)*10)/10;
+  Q['Corde polypropylène tressée Ø 16 mm (ou chanvre synthétique)']=`${fr(lc,1)} m`;
+  addQ(Q,'Sangles d’arbre pour balançoire (protègent l’écorce)',2);
+  addQ(Q,'Mousquetons à vis, charge 300 kg au moins',2);
+  Q['Huile ou lasure pour le siège']='un fond de pot';
+  st.push({t:'Choisir la branche',x:`Une branche vivante d’au moins 20 cm de diamètre, d’un arbre sain et solide (chêne, hêtre, tilleul…) : pas de résineux ni de bois mort. Accrochez la balançoire à 1 m au moins du tronc, et vérifiez qu’en se balançant, on ne touche ni le tronc ni une autre branche.`,add:ids.ar,vis:[]},
+    {t:'Les sangles',x:'Passez une sangle autour de la branche à chaque point d’accroche, sans serrer l’écorce, et fixez-y un mousqueton. Les deux points sont un peu plus écartés que le siège : la balançoire tourne moins.',add:ids.sa,vis:[]},
+    {t:'Le siège et les cordes',x:`Percez les 4 trous du siège et vissez les 2 tasseaux dessous. Passez chaque corde du dessus vers le dessous par un trou, puis remontez-la par le trou voisin, du même côté. Faites un nœud de chaise au mousqueton et réglez le siège à ${cm(ys)} cm du sol, bien horizontal.`,add:ids.si,vis:[]});
+  info.push(`Siège ${cm(wS)} × ${cm(dS)} cm, à ${cm(ys)} cm du sol`,`Cordes : ${fr(lc,1)} m en tout`,...barres(P));
+  if(hb>4000) warns.push('Au-delà de 4 m, la balançoire part très haut : réservez-la aux grands et prévoyez une grande zone libre.');
+  notes.push(`Zone libre : ${cm(Math.max(2000,hb-ys+500))} cm devant et derrière, 1,50 m sur les côtés. Sol souple dessous : herbe, copeaux, pas de racines saillantes ni de cailloux.`,
+    'Ne nouez jamais la corde directement autour de la branche : elle étrangle l’écorce et frotte. La sangle protège l’arbre et la corde.',
+    'Vérifiez la branche chaque année : fente, champignon, bois qui sonne creux. En cas de doute, demandez l’avis d’un élagueur.',
+    'Rentrez le siège l’hiver, et changez la corde dès qu’elle s’effiloche.');
+  const out=meuble({...v,e:30,mat:'ext'},{m3d:{pc,st,cotes:{W:2600,H:Math.round(hb+200),D:350}},titre:'Balançoire de branche',pieces:P,q:Q,notes,warns,info,ep:-1,
+    vue:vueAuto(Object.values(pc),'z',{titre:'Vue de face',sauf:['tr']})});
+  return {...out,big:`Balançoire à une branche à ${cm(hb)} cm · siège ${ad?'adulte':'enfant'}`};
 }
 
 
