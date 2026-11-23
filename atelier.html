@@ -1717,7 +1717,7 @@ const FAMILLES = [
   {id:'maconnerie', nom:'Maçonnerie', desc:'Béton, fondations, parpaings', outils:['beton','fondations','mortier','crepi','parpaings','pente']},
   {id:'menuiserie', nom:'Menuiserie', desc:'Étagères, meubles, tables, finitions',  outils:[{g:'Étagères',outils:['m-etagere','m-murale','m-echelle','m-angle','m-angle-mont','m-angle-ech']},{g:'Meubles',outils:['m-biblio','m-bas','m-placard']},{g:'Casiers',outils:['m-casier','m-bouteilles']},{g:'Tables et tabourets',outils:['m-tbasse','m-tsalon','m-sellette','m-tabouret']},'m-etabli','finitions']},
   {id:'jardin',     nom:'Jardin',     desc:'Nichoir, abri à insectes, table, compost, poulaillers, balançoires', outils:[{g:'Oiseaux et insectes',outils:['j-nichoir','j-mangeoire','j-insectes']},{g:'Jardinières',outils:['j-jardiniere','j-echelle','j-gradins']},'j-terrasse','j-pique','j-compost','j-poulailler','j-balancoire']},
-  {id:'objets',     nom:'Petits objets', desc:'Plateau tournant, boîtes, porte-clés', outils:[{g:'Cuisine',outils:['o-plateau','o-planche']},{g:'Boîtes',outils:['o-bijoux','o-tiroir','o-caisse']},{g:'Au mur',outils:['o-cles','o-jmurale']}]},
+  {id:'objets',     nom:'Petits objets', desc:'Plateau tournant, boîtes, porte-clés, porte-pinceaux', outils:[{g:'Cuisine',outils:['o-plateau','o-planche']},{g:'Boîtes',outils:['o-bijoux','o-tiroir','o-caisse']},{g:'Au mur',outils:['o-cles','o-jmurale']},'o-pinceaux']},
   {id:'isolation',  nom:'Isolation',  desc:'Isolants, épaisseurs', outils:['isolants','epaisseurs','isol-qte']},
   {id:'plomberie',  nom:'Plomberie',  desc:'Tuyaux, équipements, évacuations', outils:[{g:'Alimentation',outils:['tuyaux','assemblages','equipements']},'evacuations']},
   {id:'chauffage',  nom:'Chauffage et ventilation', desc:'Puissance, appareils, VMC', outils:['ch-puissance','ch-appareils','ventilation']},
@@ -4364,6 +4364,131 @@ TOOLS['o-jmurale']={nom:'Jardinière murale',aide:'Un petit bac à lattes devant
     return {...out,big:`Jardinière murale ${cm(W)} × ${cm(Ht)} cm`};
   }};
 
+
+/* ============ PETITS OBJETS : PORTE-PINCEAUX ============ */
+/* Petit disque posé sur un plan : centre c, vecteurs u et v du plan, rayon r */
+function opDisque(id,c,u,v,r,cl){ const nrm=v3x(u,v), pts=k=>Array.from({length:16},(_,i)=>{ const t=i/16*2*Math.PI; return [0,1,2].map(j=>c[j]+r*Math.cos(t)*u[j]+r*Math.sin(t)*v[j]+k*nrm[j]); });
+  return {id,cl,...sol3([pts(0.2),pts(0.6)])}; }
+/* --- Porte-pinceaux --- */
+TOOLS['o-pinceaux']={nom:'Porte-pinceaux en bois',aide:'Pour ranger les pinceaux debout, poils en l’air. Un râtelier à deux étages en contreplaqué mince, assemblé par tenons, avec un petit bac à emporter ; ou un bloc de bois massif percé, en gradins, incliné ou droit.',
+  pic:'<path d="M4 42h40V30H30v-8H18v-8H4z"/><path d="M10 14V4M24 22V8M36 30V12"/><path d="M8 4h4M22 8h4M34 12h4"/>',
+  champs:[S('forme','Modèle',[['ratelier','Râtelier à deux étages en contreplaqué'],['gradins','Bloc massif en gradins (3 marches)'],['incline','Bloc massif incliné vers vous'],['bloc','Bloc massif droit']],'ratelier'),
+    N('n','Nombre de trous','',100),
+    S('diam','Taille des trous',[['mix','Mélangés, du plus gros derrière au plus fin devant'],['fins','Pinceaux fins : 8 mm'],['gros','Gros pinceaux et brosses : 14 mm']],'mix'),
+    C('godet','Un petit bac à emporter, à côté',true,{k:'forme',v:['ratelier']}),N('ep','Épaisseur du contreplaqué','mm',5,{k:'forme',v:['ratelier']}),
+    C('pot','Une place pour le pot à eau (Ø 8 cm)',false,{k:'forme',v:['gradins','incline','bloc']}),{...essO('hetre','hetre','pin','chene','noyer'),si:{k:'forme',v:['gradins','incline','bloc']}}],
+  calc(v){
+    if(v.forme==='ratelier') return opRatelier(v);
+    const f=v.forme, n=clamp(Math.round(v.n),6,45), t=22, Pm=99, nr=3, k=Math.ceil(n/nr), dm={mix:[12,10,8],fins:[8,8,8],gros:[14,14,14]}[v.diam], sp=Math.max(...dm)+18, W=k*sp+24, pot=v.pot;
+    const pc={}, P=[], Q={}, st=[], notes=[], warns=[], info=[], ids={co:[],tr:[],po:[]};
+    const put=(g,id,o)=>{ pc[id]=o; ids[g].push(id); return o; };
+    const hs=f==='gradins'?[4*t,3*t,2*t]:f==='bloc'?[3*t,3*t,3*t]:null, hB=4*t, hF=2*t;
+    const yTop=z=>f==='incline'?hB-(hB-hF)*z/Pm:hs[Math.min(2,Math.floor(z/(Pm/3)))];
+    if(f==='gradins'){ put('co','bl',B3('bl',0,0,0,W,2*t,Pm,'p')); put('co','bl1',B3('bl1',0,2*t,0,W,t,2*Pm/3,'p')); put('co','bl2',B3('bl2',0,3*t,0,W,t,Pm/3,'p')); }
+    else if(f==='incline') put('co','bl',PX3('bl',[[0,0],[Pm,0],[Pm,hF],[0,hB]],0,W,'p'));
+    else put('co','bl',B3('bl',0,0,0,W,3*t,Pm,'p'));
+    const hp=f==='bloc'?3*t:2*t;
+    if(pot){ put('po','pp',B3('pp',W,0,0,110,hp,Pm,'p')); put('po','pr',opDisque('pr',[W+55,hp,Pm/2],[1,0,0],[0,0,1],40,'o')); pc.pr.sur=['pp']; }
+    // Trous
+    let c0=0; const lv=f==='incline'?Math.hypot(hB-hF,Pm):1, vS=f==='incline'?[0,-(hB-hF)/lv,Pm/lv]:[0,0,1];
+    for(let r=0;r<nr;r++){ const z=Pm/6+r*Pm/3, kk=Math.min(k,n-r*k); if(kk<=0) break;
+      for(let i=0;i<kk;i++){ const x=12+sp/2+i*sp+(kk<k?(k-kk)*sp/2:0), id='tr'+(c0++);
+        put('tr',id,opDisque(id,[x,yTop(z),z],[1,0,0],vS,dm[r]/2,'o')); pc[id].sur=[...ids.co]; } }
+    // Pièces : couches de planches collées
+    if(f==='gradins') P.push({nom:'Couche du bloc',q:2,L:W,l:Pm,t:'m',sec:`${t} × ${Pm}`,note:'les 2 couches du bas, sur toute la profondeur'},{nom:'Couche du bloc',q:1,L:W,l:66,t:'m',sec:`${t} × 66`,note:'3e couche, à l’arrière'},{nom:'Couche du bloc',q:1,L:W,l:33,t:'m',sec:`${t} × 33`,note:'4e couche, tout à l’arrière'});
+    else P.push({nom:'Couche du bloc',q:f==='incline'?4:3,L:W,l:Pm,t:'m',sec:`${t} × ${Pm}`,note:f==='incline'?`collées, puis le dessus scié en pente : ${cm(hB)} cm derrière, ${cm(hF)} cm devant`:'collées les unes sur les autres'});
+    if(pot) P.push({nom:'Plateau du pot à eau',q:f==='bloc'?3:2,L:110,l:Pm,t:'m',sec:`${t} × ${Pm}`,note:'collé au bout du bloc'});
+    const diams=[...new Set(dm)].sort((a,b)=>b-a);
+    Q['Mèches à bois à pointe de centrage (ou Forstner)']=diams.map(d=>`Ø ${d} mm`).join(', ');
+    Q['Profondeur de perçage']=`${f==='gradins'||f==='incline'?'3,5':'4'} cm (un ruban adhésif sur la mèche sert de repère)`;
+    addQ(Q,'Colle à bois vinylique (flacon)',1); Q['Serre-joints']='2 ou 3'; addQ(Q,'Patins en feutre sous le bloc',4);
+    finO(Q,v.ess,(2*W*Pm+2*W*hB)/1e6,false);
+    st.push({t:'Le bloc',x:f==='gradins'?'Collez les 2 couches du bas l’une sur l’autre, puis la couche de 66 mm et celle de 33 mm, alignées à l’arrière : les gradins se font tout seuls. Serrez avec les serre-joints et laissez sécher une nuit.':f==='incline'?`Collez les 4 couches et laissez sécher une nuit. Tracez la pente sur les côtés (${cm(hB)} cm derrière, ${cm(hF)} cm devant) et sciez-la à la scie à ruban ou à la scie circulaire, puis rabotez et poncez.`:'Collez les 3 couches les unes sur les autres, serrez et laissez sécher une nuit. Poncez les côtés pour effacer les joints.',add:[...ids.co,...ids.po],vis:[]},
+      {t:'Les trous',x:`Tracez ${nr} rangées de repères tous les ${cm(sp)} cm, ${v.diam==='mix'?'les gros trous (12 mm) derrière, les fins (8 mm) devant, ':''}en décalant les rangées si vous voulez. Pointez chaque repère, puis percez bien droit${f==='incline'?' (perpendiculaire à la pente : les pinceaux penchent vers vous)':''}, sur ${f==='bloc'?'4':'3,5'} cm de profondeur.`,add:ids.tr,vis:[]},
+      {t:'Finition',x:'Cassez les arêtes au papier de verre, fraisez légèrement le bord de chaque trou, dépoussiérez et passez la finition. Collez les patins en feutre dessous.',add:[],vis:[]});
+    info.push(`${n} trous · ${cm(W+(pot?110:0))} × ${cm(Pm)} cm, ${cm(hB)} cm de haut au plus`,...barres(P));
+    notes.push('Rangez les pinceaux poils en l’air, une fois rincés et essorés : ils sèchent sans se déformer.','Percez un petit trou de 3 mm au fond de chaque trou, traversant : l’eau qui coule du manche s’évacue.',
+      'Une chute de planche de 22 mm suffit : c’est un bon projet pour finir des restes de bois dur.');
+    const out=meuble({...v,e:t,mat:'obj'},{m3d:{pc,st,cotes:{W:W+(pot?110:0),H:hB,D:Pm}},titre:'Porte-pinceaux',pieces:P,q:Q,notes,warns,info,ep:-1,vis:false,
+      vue:vueAuto(Object.values(pc),'x',{titre:'Vue de côté',sauf:ids.tr})});
+    return {...out,big:`Porte-pinceaux ${f==='gradins'?'en gradins':f==='incline'?'incliné':'droit'} · ${n} trous`};
+  }};
+
+
+/* Râtelier à deux étages, en contreplaqué mince assemblé par tenons traversants : long et peu profond, très ouvert.
+   Plateau haut percé à l'arrière, plateau bas percé devant, fond plein, dos plein, rebord bas devant.
+   Repère : x en largeur, z de l'arrière (0) vers l'avant, y vers le haut. */
+TEINTE.pmanche=[222,45,22]; TEINTE.ppoil=[24,65,42]; TEINTE.pvir=[210,8,72];
+function opRatelier(v){
+  const e=clamp(Math.round(v.ep),3,10), n=clamp(Math.round(v.n),12,120);
+  // Trous mêlés gros et petits, en quinconce, 3 rangées par plateau
+  const dd={mix:[[16,8],[12,8],[14,10]],fins:[[8,8],[8,8],[8,8]],gros:[[16,12],[14,12],[16,12]]}[v.diam];
+  const sp=Math.max(...dd.flat())/2+Math.min(...dd.flat())/2+5, rp=Math.round(sp*0.9), nr=3;
+  const dP0=nr*rp+8, k=Math.max(Math.ceil(n/(2*nr)),Math.ceil(2.4*(2*dP0+16)/sp)), W=Math.round(k*sp+sp/2+2*e+14), dP=dP0, z1=e, z2=z1+dP, z3=z2+6, D=z3+dP+e;
+  const H1=110, H2=62, hR=26;
+  const pc={}, P=[], Q={}, st=[], notes=[], warns=[], info=[], ids={co:[],pl:[],tr:[],te:[],go:[],pi:[]};
+  const put=(g,id,o)=>{ pc[id]=o; ids[g].push(id); return o; };
+  // Côtés en marche
+  [[0,'g'],[W-e,'d']].forEach(([x,s])=>{ put('co','ch'+s,B3('ch'+s,x,0,0,e,H1,z3,'p')); put('co','cb'+s,B3('cb'+s,x,0,z3,e,H2,D-z3,'p')); });
+  put('pl','fo',B3('fo',e,0,0,W-2*e,e,D,'p'));
+  put('pl','do',B3('do',e,e,0,W-2*e,H1-e,e,'p'));
+  put('pl','eh',B3('eh',e,H1-e,z1,W-2*e,e,z3-z1,'p'));
+  put('pl','eb',B3('eb',e,H2-e,z3,W-2*e,e,D-z3-e,'p'));
+  put('pl','fa',B3('fa',e,e,D-e,W-2*e,hR,e,'p'));
+  // Trous
+  const trous=[]; let c0=0;
+  const rang=(y,z0,pl)=>{ for(let r=0;r<nr;r++){ const z=z0+5+rp/2+r*rp, dec=r%2?sp/2:0;
+      for(let i=0;i<k;i++){ if(c0>=n) return; const x=e+7+sp/2+i*sp+dec; if(x+10>W-e) continue;
+        const d=dd[r][(i+r)%2], id='tr'+(c0++); put('tr',id,opDisque(id,[x,y,z],[1,0,0],[0,0,1],d/2,'o')); pc[id].sur=[pl]; trous.push([x,y,z,d,pl]); } } };
+  rang(H1,z1,'eh'); rang(H2,z3,'eb');
+  const nt=trous.length;
+  // Fentes des tenons sur les côtés
+  const fente=(id,x,y,z,h,d,sur)=>{ put('te',id,B3(id,x,y,z,0.6,h,d,'o')); pc[id].sur=sur; };
+  [[-0.6,'g'],[W,'d']].forEach(([x,s])=>{ const su=['ch'+s,'cb'+s];
+    [[H1-e,z1+dP*0.15],[H1-e,z1+dP*0.65],[H2-e,z3+dP*0.15],[H2-e,z3+dP*0.65],[0,D*0.2],[0,D*0.7]].forEach(([y,z],i)=>fente('th'+s+i,x,y,z,e,14,su));
+    [[0,H1*0.25],[0,H1*0.65],[D-e,4]].forEach(([z,y],i)=>fente('tv'+s+i,x,y,z,14,e,su)); });
+  // Des pinceaux dans les trous (un sur trois ou quatre reste libre)
+  const pinceau=(id,x,yb,yv,z,d,sur)=>{ const m=Math.min(7,Math.max(3,d*0.45)), lh=yv-yb;
+    put('pi',id+'m',B3(id+'m',x-m/2,yb,z-m/2,m,lh,m,'pmanche')); pc[id+'m'].sur=sur;
+    put('pi',id+'v',B3(id+'v',x-m*0.45,yv,z-m*0.45,m*0.9,24,m*0.9,'pvir'));
+    put('pi',id+'p',B3(id+'p',x-m*0.4,yv+24,z-m*0.4,m*0.8,22,m*0.8,'ppoil')); };
+  trous.forEach(([x,y,z,d,pl],i)=>{ if((i*7)%11>4) return; const yv=y+110+((i*37)%5)*16+(d>12?25:0); pinceau('pc'+i,x,y,yv,z,d,[pl]); });
+  P.push({nom:'Côté',q:2,L:H1,l:D,e,t:'p',note:`en marche : ${cm(H1)} cm de haut à l’arrière sur ${cm(z3)} cm, ${cm(H2)} cm devant ; fentes pour les tenons`},
+    {nom:'Fond',q:1,L:W,l:D,e,t:'p',note:`plein ; ${cm(W-2*e)} cm entre les côtés + un tenon de ${e} mm de chaque côté`},
+    {nom:'Dos',q:1,L:W,l:H1-e,e,t:'p',note:'plein, tenons aux deux bouts'},
+    {nom:'Plateau haut (percé)',q:1,L:W,l:z3-z1,e,t:'p',note:'3 rangées en quinconce, gros et petits trous mêlés'},
+    {nom:'Plateau bas (percé)',q:1,L:W,l:D-z3-e,e,t:'p',note:'3 rangées en quinconce, gros et petits trous mêlés'},
+    {nom:'Rebord avant',q:1,L:W,l:hR,e,t:'p',note:'retient le bas des manches'});
+  // Petit bac à emporter, à gauche, comme une boîte à crayons
+  if(v.godet){ const gx=86, gz=60, hg=78, x0=-gx-60, z0=D-gz-5;
+    put('go','gf',B3('gf',x0,0,z0,gx,e,gz,'p'));
+    put('go','g1',B3('g1',x0,e,z0,gx,hg-e,e,'p')); put('go','g2',B3('g2',x0,e,z0+gz-e,gx,hg-e,e,'p'));
+    put('go','g3',B3('g3',x0,e,z0+e,e,hg-e,gz-2*e,'p')); put('go','g4',B3('g4',x0+gx-e,e,z0+e,e,hg-e,gz-2*e,'p'));
+    [[x0+gx*0.25,'a'],[x0+gx*0.65,'b']].forEach(([x,s])=>{ fente('gte'+s,x,hg*0.35,z0+gz,12,0.6,['g2']); });
+    [[x0,'c'],[x0+gx,'d']].forEach(([x,s])=>{ fente('gtf'+s,x-(s==='c'?0.6:0),hg*0.5,z0+gz*0.3,12,e,[s==='c'?'g3':'g4']); });
+    let j=0; for(let a=0;a<4;a++) for(let b=0;b<2;b++){ if((a+b)%3===2) continue; const x=x0+e+8+a*(gx-2*e-16)/3, z=z0+e+10+b*(gz-2*e-20);
+      pinceau('gp'+(j++),x,hg-2,hg+110+((a*3+b)%3)*18,z,10,['g1','g3','g4']); }
+    P.push({nom:'Petit bac : fond',q:1,L:gx,l:gz,e,t:'p'},{nom:'Petit bac : grands côtés',q:2,L:gx,l:hg,e,t:'p',note:'créneaux aux angles'},{nom:'Petit bac : petits côtés',q:2,L:gz-2*e,l:hg,e,t:'p',note:'créneaux aux angles'}); }
+  const diams=[...new Set(dd.flat())].sort((a,b)=>b-a);
+  const sCP=(2*H1*D+W*(D+H1+2*dP+hR)+(v.godet?0.03e6:0))/1e6;
+  Q[`Contreplaqué peuplier ou bouleau ${e} mm (ou MDF)`]=`${fr(sCP*1.3,2)} m²`;
+  Q['Mèches à bois à pointe ou Forstner']=diams.map(d=>`Ø ${d} mm`).join(', ');
+  Q['Colle à bois vinylique (flacon)']=1; Q['Ruban de masquage pour tenir pendant le séchage']='1 rouleau';
+  Q['Outils']='scie à chantourner, perceuse sur support si possible, lime plate, papier de verre 120 et 180';
+  Q['Vernis incolore mat ou cire']='1 petit pot';
+  st.push({t:'Tracer et découper',x:`Tracez les pièces sur le contreplaqué. Le fond, le dos, les 2 plateaux et le rebord portent à chaque bout des tenons de ${e} mm de long et 1,4 cm de large, aux places des fentes des côtés. Découpez à la scie à chantourner, puis les fentes des côtés, au plus juste.`,add:ids.co,vis:[]},
+    {t:'Percer les plateaux',x:`Avant d’assembler, tracez 3 rangées de trous en quinconce sur chaque plateau, en alternant gros et petits trous (${diams.map(d=>d+' mm').join(', ')}). Posez une chute dessous et percez bien droit, sans appuyer à la sortie.`,add:ids.pl.concat(ids.tr),vis:[]},
+    {t:'Assembler',x:'Mettez une goutte de colle sur chaque tenon et glissez-les dans les fentes du premier côté : fond, dos, plateau haut, plateau bas, rebord. Posez le second côté, serrez au ruban de masquage, vérifiez l’équerre et laissez sécher. Poncez les tenons au ras des côtés.',add:ids.te,vis:[]});
+  if(v.godet) st.push({t:'Le petit bac',x:'Assemblez les 4 côtés en créneaux autour du fond, avec de la colle. On l’emporte près du chevalet avec les pinceaux du jour.',add:ids.go.filter(id=>!/^gp/.test(id)),vis:[]});
+  st.push({t:'Ranger les pinceaux',x:'Les manches traversent les plateaux et reposent sur le fond : les pinceaux de derrière dépassent de ceux de devant, on les voit tous. Les gros pinceaux dans les gros trous.',add:ids.pi,vis:[]});
+  info.push(`${nt} trous · ${cm(W)} × ${cm(D)} cm, ${cm(H1)} cm de haut`,`Plateau haut à ${cm(H1)} cm, plateau bas à ${cm(H2)} cm`);
+  notes.push('Rangez les pinceaux rincés et essorés, poils en l’air : ils sèchent sans se déformer.',
+    'Un vernis mat protège le bois des taches de peinture et de l’eau de rinçage.',
+    'Dans un fablab, ce modèle se découpe aussi à la découpeuse laser : dessinez les pièces à plat, avec les tenons et les trous.');
+  const out=meuble({...v,e,mat:'obj'},{m3d:{pc,st,cotes:{W,H:H1,D}},titre:'Porte-pinceaux',pieces:P,q:Q,notes,warns,info,ep:-1,vis:false,
+    vue:vueAuto(Object.values(pc).filter(p=>!ids.go.includes(p.id)&&!ids.pi.includes(p.id)),'x',{titre:'Vue de côté',sauf:[...ids.tr,...ids.te]})});
+  return {...out,big:`Râtelier à pinceaux · ${nt} trous${v.godet?', avec son petit bac':''}`};
+}
 
 /* ============ JARDIN : ABRI À INSECTES ============ */
 TEINTE.paille=[46,62,70]; TEINTE.bam=[48,40,64]; TEINTE.cone=[22,45,32]; TEINTE.bri=[12,52,52]; TEINTE.eco=[26,32,42]; TEINTE.buche=[32,42,58];
