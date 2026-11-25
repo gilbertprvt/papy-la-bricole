@@ -1713,7 +1713,7 @@ const ICONES = {
 const FAMILLES = [
   {id:'bois',       nom:'Bois',       desc:'Découpes, essences, finitions',          outils:[{g:'Découpe',outils:['panneaux','tasseaux']},'planches',{g:'Le bois',outils:['essences','finitions']}]},
   {id:'murs',       nom:'Murs',       desc:'Peinture, papier peint, placo', outils:['papier-peint','peinture','placo','enduit']},
-  {id:'sols',       nom:'Sols',       desc:'Carrelage, parquet, terrasse', outils:['carrelage','parquet','plinthes','terrasse']},
+  {id:'sols',       nom:'Sols',       desc:'Carrelage, parquet, terrasse, chape, ragréage', outils:['carrelage','parquet','plinthes','terrasse',{g:'Chape et ragréage',outils:['chape','ragreage']}]},
   {id:'maconnerie', nom:'Maçonnerie', desc:'Béton, fondations, parpaings', outils:['beton','fondations','mortier','crepi','parpaings','pente']},
   {id:'menuiserie', nom:'Menuiserie', desc:'Étagères, meubles, coffres, tables, finitions',  outils:[{g:'Étagères',outils:['m-etagere','m-murale','m-echelle','m-angle','m-angle-mont','m-angle-ech']},{g:'Meubles',outils:['m-biblio','m-bas','m-placard']},{g:'Coffres',outils:['m-coffre','m-coffre-banc','m-malle']},{g:'Casiers',outils:['m-casier','m-bouteilles']},{g:'Tables et tabourets',outils:['m-tbasse','m-tsalon','m-sellette','m-tabouret']},'m-etabli','finitions']},
   {id:'jardin',     nom:'Jardin',     desc:'Nichoir, abri à insectes, table, compost, poulaillers, balançoires', outils:[{g:'Oiseaux et insectes',outils:['j-nichoir','j-mangeoire','j-insectes']},{g:'Jardinières',outils:['j-jardiniere','j-echelle','j-gradins']},'j-terrasse','j-pique','j-compost','j-poulailler','j-balancoire']},
@@ -4846,6 +4846,101 @@ TOOLS['m-malle']={nom:'Malle en planches',aide:'Un coffre rustique en planches d
     const out=meuble({...v,e,mat:'massif'},{m3d:{pc,st,cotes:{W:L,H:yt,D}},titre:'Malle',pieces:P,q:Q,notes,warns,info,vis:true,
       vue:vueAuto(Object.values(pc).filter(p=>!fe.includes(p.id)),'z',{titre:'Malle vue de face'})});
     return {...out,big:`Malle ${cm(L)} × ${cm(D)} cm · ${n} planches de haut`};
+  }};
+
+/* ============ SOLS : CHAPE ET RAGRÉAGE ============ */
+const ulList=(t,a)=>`<div class="tab-g"><b>${t}</b><ul>${a.map(x=>`<li>${x}</li>`).join('')}</ul></div>`;
+const olList=(t,a)=>`<div class="tab-g"><b>${t}</b><ol style="margin:4px 0 0;padding-left:22px;font-size:.95rem">${a.map(x=>`<li style="margin-bottom:4px">${x}</li>`).join('')}</ol></div>`;
+const notesB=a=>`<div class="tab-notes"><b>Bon à savoir</b><ul>${a.map(x=>`<li>${x}</li>`).join('')}</ul></div>`;
+const tablo=(t,th,rows)=>`<div class="tab-g"><b>${t}</b><div class="tbl"><table><thead><tr>${th.map(x=>`<th>${x}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map(x=>`<td>${x}</td>`).join('')}</tr>`).join('')}</tbody></table></div></div>`;
+/* Coupe d'un sol : couches empilées de bas en haut [{nom, h (mm), cl}] contre un mur à gauche */
+function coupeSol(couches,titre){ const W=600, mur=40, H=couches.reduce((s,c)=>s+c.hd,0), R=[{cl:'mv-mur',x:-mur,y:0,w:mur,h:H+40}], txt=[]; let y=0;
+  couches.forEach(c=>{ R.push({cl:c.cl,x:c.dx||0,y,w:W-(c.dx||0),h:c.hd}); if(c.nom) txt.push([W/2,y+c.hd/2-6,c.nom,0.55]); y+=c.hd; });
+  return vue(W,H+40,R,{titre,cw:false,ch:false,sol:false,txt}); }
+
+TOOLS['chape']={nom:'Chape ciment',aide:'Une chape au ciment et au sable pour avoir un sol plat et solide, avant le carrelage, le parquet ou le ragréage. Le dosage, les quantités et la recette par gâchée.',
+  champs:[N('L','Longueur de la pièce','m',4),N('l','Largeur de la pièce','m',3),N('ep','Épaisseur de la chape','cm',5),
+    S('type','Type de chape',[['adh','Adhérente (collée sur la dalle)'],['des','Désolidarisée (sur un film plastique)'],['flo','Flottante (sur un isolant)']],'des'),
+    S('dos','Usage (dosage en ciment)',[['300','Sous parquet ou moquette : 300 kg/m³'],['350','Sous carrelage, usage courant : 350 kg/m³'],['400','Sol brut, garage, atelier : 400 kg/m³']],'350'),
+    N('sac','Poids d’un sac de ciment','kg',35),N('p','Pertes','%',10)],
+  calc(v){
+    const s=v.L*v.l, ep=v.ep, dos=+v.dos, vol=s*ep/100*(1+v.p/100), cim=vol*dos, sacs=v.sac?up(cim/v.sac):0;
+    const sab=vol*1600, eau=cim*0.45, mini={adh:3,des:4,flo:5}[v.type], warns=[];
+    if(ep<mini) warns.push({warn:`Trop mince : une chape ${v.type==='adh'?'adhérente':v.type==='des'?'désolidarisée':'flottante'} doit faire au moins ${mini} cm, sinon elle se fissure.`});
+    if(ep>8) warns.push({warn:'Au-delà de 8 cm, faites plutôt une dalle en béton (avec gravier) ou une première couche de béton maigre : moins cher et moins de retrait.'});
+    if(v.type==='adh'&&ep>5) warns.push({warn:'Une chape adhérente ne dépasse pas 5 cm : au-delà, passez en chape désolidarisée sur film.'});
+    if(s>40||Math.max(v.L,v.l)>8) warns.push({warn:'Plus de 40 m² ou plus de 8 m de long : prévoyez des joints de fractionnement (un trait de truelle sur la moitié de l’épaisseur), et toujours aux seuils de porte.'});
+    const sacS=v.sac||35, sabG=sacS*1600/dos, seauC=sacS/12, seauS=sabG/15, eauG=sacS*0.45, g=sacs;
+    const Q=[`${sacs} sacs de ciment de ${fr(sacS,0)} kg (CEM II 32,5)`,`${fr(sab/1000,2)} tonne de sable 0/4 lavé (environ ${fr(sab/1500,1)} m³)`];
+    if(v.type!=='adh') Q.push(`Film polyane 150 µm : ${fr(up(s*1.15),0)} m² (bords relevés de 10 cm, recouvrements de 20 cm)`);
+    Q.push(`Bande périphérique en mousse 5 mm : ${fr(up(2*(v.L+v.l)*1.05),0)} m`);
+    if(v.type==='flo') Q.push(`Treillis soudé pour chape (mailles de 50 × 50 mm) : ${fr(up(s*1.1),0)} m²`);
+    if(v.type==='adh') Q.push(`Primaire d’accrochage ou résine pour barbotine : ${fr(Math.max(1,s*0.2),1)} L`);
+    Q.push('Règle en aluminium de 2 m, taloche, niveau laser ou à bulle, bétonnière conseillée au-delà de 2 sacs');
+    const couches=[{nom:'dalle béton ou support',hd:70,cl:'mv-mur'}];
+    if(v.type==='flo') couches.push({nom:'isolant',hd:50,cl:'mv-m'});
+    if(v.type!=='adh') couches.push({nom:'',hd:4,cl:'mv-met'});
+    couches.push({nom:`chape ${fr(ep,1)} cm${v.type==='flo'?' + treillis':''}`,hd:Math.max(30,ep*10),cl:'mv-p',dx:v.type==='adh'?0:8});
+    const extra=coupeSol(couches,'Coupe de la chape')+
+      tablo('Recette par gâchée (pour 1 sac de ciment)',['Ciment','Sable 0/4','Eau'],[[`1 sac de ${fr(sacS,0)} kg<br><span class="u">≈ ${fr(seauC,1)} seaux de 10 L</span>`,`${fr(sabG,0)} kg<br><span class="u">≈ ${fr(seauS,0)} seaux de 10 L</span>`,`${fr(eauG*0.8,0)} à ${fr(eauG,0)} L<br><span class="u">à ajouter peu à peu</span>`]])+
+      `<p class="hint" style="margin:6px 0 12px">En volume : <b>1 seau de ciment pour ${fr(seauS/seauC,1)} seaux de sable</b>. Il faut environ ${g} gâchée${g>1?'s':''}.</p>`+
+      tablo('Dosages courants',['Usage','Ciment par m³ de sable','En seaux'],[['Sous parquet, moquette, sol souple',300],['Sous carrelage, usage courant',350],['Sol brut, garage, atelier',400]].map(([u,d])=>[u,d+' kg',`1 seau de ciment pour ${fr(1600*12/(15*d),1)} de sable`]))+
+      ulList('Fournitures',Q)+
+      olList('Les étapes',[
+        v.type==='adh'?'<b>Préparer le support</b> : dalle propre, sans laitance ni poussière, humidifiée la veille. Juste avant de couler, étalez une barbotine (ciment + eau + résine d’accrochage) au balai : la chape doit coller.'
+          :v.type==='des'?'<b>Préparer le support</b> : dalle propre et à peu près plane. Déroulez le film polyane, bords relevés de 10 cm contre les murs, recouvrements de 20 cm scotchés.'
+          :'<b>Préparer le support</b> : posez l’isolant serré et bien à plat, puis le film polyane par-dessus (bords relevés, recouvrements scotchés) et le treillis sur des cales, pour qu’il soit au milieu de la chape.',
+        `<b>Bande périphérique</b> : collez la bande de mousse au bas de tous les murs, poteaux et tuyaux. Elle laisse la chape bouger sans fissurer.`,
+        `<b>Les repères de niveau</b> : tracez au mur, au laser ou au niveau, le haut de la chape (${fr(ep,1)} cm). Posez des « guides » : 2 bandes de mortier ou 2 tubes réglés au niveau, à 1,5 m d’écart environ, sur lesquels glissera la règle.`,
+        `<b>Gâcher</b> : dans la bétonnière, mettez la moitié du sable, le ciment, puis le reste du sable. Ajoutez l’eau <b>peu à peu</b>. La bonne consistance est « terre humide » : une poignée serrée garde sa forme sans couler d’eau. Trop d’eau = chape fragile qui fissure.`,
+        '<b>Tirer à la règle</b> : en partant du fond de la pièce vers la porte, étalez le mortier entre les guides, tassez-le à la taloche, puis tirez la règle en zigzag sur les guides. Comblez les creux et repassez.',
+        '<b>Finir</b> : enlevez les guides au fur et à mesure et rebouchez leur place. Talochez la surface pour la serrer. Lissez à la lisseuse seulement si le sol reste brut (garage).',
+        '<b>Laisser sécher</b> : ne marchez pas dessus pendant 48 h. Les 3 premiers jours, pas de courant d’air ni de soleil direct : en été, couvrez d’un film ou humidifiez légèrement.'])+
+      notesB(['Sable : du 0/4 lavé, pour chape. Pas de sable de mer ni de sable fin à enduit.',
+        'Comptez environ 1 semaine de séchage par cm d’épaisseur avant un parquet, un sol souple ou un ragréage. Carrelage collé : au moins 4 semaines.',
+        'Pour un sol neuf et parfaitement lisse, une chape fluide (livrée en camion toupie, coulée par un professionnel) est une bonne solution au-delà de 30 m².',
+        'Pour rattraper seulement quelques millimètres, pas besoin de chape : faites un ragréage.',
+        'Le ciment brûle la peau : gants, manches longues et lunettes pour gâcher.']);
+    return {big:`${fr(vol,2)} m³ de chape`, detail:[`Surface : ${fr(s)} m² · ${fr(ep,1)} cm d’épaisseur · volume pertes comprises`,`Ciment ≈ ${fr(cim,0)} kg, soit ${sacs} sacs de ${fr(sacS,0)} kg`,`Sable 0/4 ≈ ${fr(sab,0)} kg · eau ≈ ${fr(eau*0.8,0)} à ${fr(eau,0)} litres`,...warns],
+      extra, item:[`Chape ${fr(s)} m² : ${sacs} sacs de ciment de ${fr(sacS,0)} kg`,`Chape : ${fr(sab/1000,2)} t de sable 0/4`,...(v.type!=='adh'?[`Chape : film polyane ${fr(up(s*1.15),0)} m²`]:[]),`Chape : bande périphérique ${fr(up(2*(v.L+v.l)*1.05),0)} m`,...(v.type==='flo'?[`Chape : treillis soudé ${fr(up(s*1.1),0)} m²`]:[])]};
+  }};
+
+TOOLS['ragreage']={nom:'Ragréage intérieur',aide:'Un mortier liquide qui s’étale tout seul pour rendre un sol plat et lisse avant un revêtement : de 3 à 10 mm en général. Quantités, eau de gâchage et méthode.',
+  champs:[N('s','Surface','m²',15),N('ep','Épaisseur moyenne','mm',5),
+    S('sup','Support',[['chape','Chape ou dalle béton'],['carr','Ancien carrelage'],['bois','Plancher bois ou panneaux (OSB, aggloméré)']],'chape'),
+    S('rev','Revêtement prévu',[['carr','Carrelage'],['souple','Sol souple (vinyle, lino, moquette)'],['parq','Parquet flottant ou stratifié']],'souple'),
+    N('c','Consommation (écrite sur le sac)','kg par m² par mm',1.6),N('sac','Poids d’un sac','kg',25),N('eau','Eau par sac (écrite sur le sac)','L',5.5),N('p','Pertes','%',10)],
+  calc(v){
+    const ep=v.ep, bois=v.sup==='bois', kg=v.s*ep*v.c*(1+v.p/100), sacs=v.sac?up(kg/v.sac):0, eau=sacs*v.eau, warns=[];
+    const emin=bois?5:v.rev==='souple'?3:2;
+    if(ep<emin) warns.push({warn:`Trop mince : ${bois?'sur du bois, au moins 5 mm de ragréage fibré':'au moins 3 mm, sinon il fissure ou se décolle'}.`});
+    if(ep>10) warns.push({warn:'Plus de 10 mm : prenez un ragréage « épais » ou « fibré » qui accepte cette épaisseur (lisez le sac), ou rattrapez d’abord avec une chape.'});
+    const prim=v.sup==='chape'?'Primaire d’accrochage pour support poreux':v.sup==='carr'?'Primaire pour support fermé (carrelage)':'Primaire spécial bois';
+    const Q=[`${sacs} sacs de ragréage${bois?' fibré':''} de ${fr(v.sac,0)} kg (P3, intérieur)`,`${prim} : ${fr(Math.max(1,v.s*0.15),1)} L (voir le bidon)`,
+      `Bande périphérique en mousse : ${fr(up(4*Math.sqrt(v.s)*1.1),0)} m (environ, à mesurer)`,'Malaxeur ou perceuse puissante avec fouet, 2 seaux de 30 L, seau gradué',
+      'Lisseuse ou raclette crantée, rouleau débulleur, chaussures à clous'];
+    const couches=[{nom:v.sup==='bois'?'plancher bois':v.sup==='carr'?'ancien carrelage':'chape ou dalle',hd:70,cl:v.sup==='bois'?'mv-p':'mv-mur'},{nom:'',hd:3,cl:'mv-met'},{nom:`ragréage ${fr(ep,0)} mm`,hd:Math.max(18,ep*3),cl:'mv-m',dx:6}];
+    const extra=coupeSol(couches,'Coupe du ragréage')+
+      tablo('Gâchage (pour 1 sac)',['Ragréage','Eau','Mélange'],[[`1 sac de ${fr(v.sac,0)} kg`,`<b>${fr(v.eau,1)} L</b> exactement<br><span class="u">toujours la même quantité</span>`,`2 à 3 min au malaxeur, puis 2 min de repos et on remélange`]])+
+      `<p class="hint" style="margin:6px 0 12px">Il faut ${sacs} sacs et ${fr(eau,0)} litres d’eau en tout. Un sac couvre environ ${fr(v.sac/(v.c*ep),1)} m² à ${fr(ep,0)} mm.</p>`+
+      ulList('Fournitures',Q)+
+      olList('Les étapes',[
+        v.sup==='chape'?'<b>Préparer le support</b> : il doit être sec, dur et propre. Grattez les plâtres et les colles, bouchez les trous et les fissures, aspirez soigneusement toute la poussière.'
+          :v.sup==='carr'?'<b>Préparer le support</b> : recollez ou enlevez les carreaux qui sonnent creux. Lessivez et dégraissez, rincez, laissez sécher. Poncez légèrement l’émail si le primaire le demande.'
+          :'<b>Préparer le support</b> : revissez les lames ou panneaux qui bougent (vis tous les 15 cm), le plancher ne doit pas fléchir. Bouchez les fentes au mastic acrylique, aspirez.',
+        `<b>Bande périphérique</b> : collez-la au bas des murs. Bouchez le dessous des portes et les passages de tuyaux (mastic, carton scotché) : le ragréage coule partout.`,
+        `<b>Le primaire</b> : passez au rouleau le ${prim.toLowerCase()}, dilué comme indiqué sur le bidon. Laissez sécher (souvent 1 à 24 h). Sans primaire, le ragréage sèche trop vite et se décolle.`,
+        `<b>Gâcher</b> : versez d’abord l’eau (${fr(v.eau,1)} L) dans le seau, puis le sac en malaxant. Jamais d’eau en plus pour le rendre plus liquide : il deviendrait friable et fissurerait. À deux, c’est bien plus facile : l’un gâche, l’autre étale.`,
+        '<b>Couler et étaler</b> : en partant du coin opposé à la porte, versez en bandes de 50 cm à 1 m. Étalez à la lisseuse ou à la raclette à l’épaisseur voulue. Raccordez chaque bande avant que la précédente ne commence à prendre : on a 20 à 30 minutes.',
+        '<b>Débuller</b> : passez tout de suite le rouleau débulleur, en croisant, pour chasser l’air et effacer les traces. Avec des chaussures à clous, on peut marcher dans le frais.',
+        `<b>Laisser sécher</b> : fermez portes et fenêtres, pas de chauffage fort ni de soleil direct. On marche dessus après 3 à 4 h. Pose du ${v.rev==='carr'?'carrelage : après 24 h':v.rev==='souple'?'sol souple : après 24 à 72 h selon l’épaisseur':'parquet : après 48 à 72 h, avec sa sous-couche'} (vérifiez sur le sac).`])+
+      notesB(['Le ragréage ne rattrape pas une grosse bosse ni une pente : pour plus de 10 à 15 mm, faites une chape (rubrique Chape ciment).',
+        'Travaillez entre 5 et 25 °C, et jamais sur un support mouillé ou gelé.',
+        'Pour un sol souple (vinyle, lino) le ragréage est indispensable : la moindre bosse se verra au travers.',
+        bois?'Sur du bois : ragréage fibré obligatoire, primaire spécial bois et au moins 5 mm. Pour un plancher qui fléchit, vissez d’abord un panneau d’OSB ou d’aggloméré de 10 mm.':'Pour une pièce humide (salle de bain), choisissez un ragréage marqué pour locaux humides et faites une sous-couche d’étanchéité sous le carrelage de la douche.',
+        'Portez un masque anti-poussière en versant la poudre, et des gants.']);
+    return {big:`${sacs} sacs de ${fr(v.sac,0)} kg`, detail:[`${fr(kg,0)} kg de ragréage pour ${fr(v.s)} m² à ${fr(ep,0)} mm (pertes comprises)`,`Eau : ${fr(eau,0)} litres en tout, soit ${fr(v.eau,1)} L par sac`,...warns],
+      extra, item:[`Ragréage${bois?' fibré':''} : ${sacs} sacs de ${fr(v.sac,0)} kg`,`${prim} : ${fr(Math.max(1,v.s*0.15),1)} L`]};
   }};
 
 function symbolesHTML(){
