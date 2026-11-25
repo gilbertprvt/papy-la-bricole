@@ -1715,7 +1715,7 @@ const FAMILLES = [
   {id:'murs',       nom:'Murs',       desc:'Peinture, papier peint, placo', outils:['papier-peint','peinture','placo','enduit']},
   {id:'sols',       nom:'Sols',       desc:'Carrelage, parquet, terrasse', outils:['carrelage','parquet','plinthes','terrasse']},
   {id:'maconnerie', nom:'Maçonnerie', desc:'Béton, fondations, parpaings', outils:['beton','fondations','mortier','crepi','parpaings','pente']},
-  {id:'menuiserie', nom:'Menuiserie', desc:'Étagères, meubles, tables, finitions',  outils:[{g:'Étagères',outils:['m-etagere','m-murale','m-echelle','m-angle','m-angle-mont','m-angle-ech']},{g:'Meubles',outils:['m-biblio','m-bas','m-placard']},{g:'Casiers',outils:['m-casier','m-bouteilles']},{g:'Tables et tabourets',outils:['m-tbasse','m-tsalon','m-sellette','m-tabouret']},'m-etabli','finitions']},
+  {id:'menuiserie', nom:'Menuiserie', desc:'Étagères, meubles, coffres, tables, finitions',  outils:[{g:'Étagères',outils:['m-etagere','m-murale','m-echelle','m-angle','m-angle-mont','m-angle-ech']},{g:'Meubles',outils:['m-biblio','m-bas','m-placard']},{g:'Coffres',outils:['m-coffre','m-coffre-banc','m-malle']},{g:'Casiers',outils:['m-casier','m-bouteilles']},{g:'Tables et tabourets',outils:['m-tbasse','m-tsalon','m-sellette','m-tabouret']},'m-etabli','finitions']},
   {id:'jardin',     nom:'Jardin',     desc:'Nichoir, abri à insectes, table, compost, poulaillers, balançoires', outils:[{g:'Oiseaux et insectes',outils:['j-nichoir','j-mangeoire','j-insectes']},{g:'Jardinières',outils:['j-jardiniere','j-echelle','j-gradins']},'j-terrasse','j-pique','j-compost','j-poulailler','j-balancoire']},
   {id:'objets',     nom:'Petits objets', desc:'Plateau tournant, boîtes, porte-clés, porte-pinceaux', outils:[{g:'Cuisine',outils:['o-plateau','o-planche']},{g:'Boîtes',outils:['o-bijoux','o-tiroir','o-caisse']},{g:'Au mur',outils:['o-cles','o-jmurale']},'o-pinceaux']},
   {id:'isolation',  nom:'Isolation',  desc:'Isolants, épaisseurs', outils:['isolants','epaisseurs','isol-qte']},
@@ -4656,6 +4656,196 @@ TOOLS['m-tabouret']={nom:'Tabouret, petit banc',aide:'Un plateau épais sur deux
     const out=meuble({...v,e,mat:'massif'},{m3d:{pc,st,cotes:{W:L,H,D:l}},titre:'Tabouret',pieces:P,q:Q,notes,warns,info:[...barres(P)],
       vue:vueAuto(Object.values(pc),'x',{titre:'Vue de côté (pied)'})});
     return {...out,big:`Tabouret ${cm(L)} × ${cm(l)} cm, ${cm(H)} cm de haut`};
+  }};
+
+/* ============ MENUISERIE : COFFRES (COFFRE À JOUETS, BANC-COFFRE, MALLE EN PLANCHES) ============ */
+TEINTE.cous=[205,28,52]; TEINTE.rou=[220,6,26];
+/* Barre fine entre deux points (z,y), vue de côté : compas, vérin */
+function barre3(id,x0,w,a,b,t,cl){ const dz=b[0]-a[0], dy=b[1]-a[1], n=Math.hypot(dz,dy)||1, oz=-dy/n*t/2, oy=dz/n*t/2;
+  return PX3(id,[[a[0]+oz,a[1]+oy],[b[0]+oz,b[1]+oy],[b[0]-oz,b[1]-oy],[a[0]-oz,a[1]-oy]],x0,w,cl); }
+/* Rectangle (z,y) qui pivote autour de la charnière (zp,yp) d'un angle a (le devant se lève) */
+function abattant(zp,yp,u0,u1,ep,a){ const c=Math.cos(a), s=Math.sin(a);
+  return [[u0,0],[u1,0],[u1,ep],[u0,ep]].map(([u,t])=>[zp+u*c-t*s, yp+u*s+t*c]); }
+const SECU_COFFRE=['Sécurité enfants : un compas « spécial coffre à jouets » (ou un vérin à frein) retient le couvercle dans toutes les positions. Sans lui, le couvercle peut retomber sur la tête ou les doigts.',
+  'Jamais de serrure ni de loquet sur un coffre où un enfant peut se glisser, et toujours une aération (jour sous le couvercle, poignées découpées ou trous).',
+  'Arrondissez toutes les arêtes (rayon de 3 à 5 mm) et poncez bien. Pour la finition, choisissez une peinture ou un vernis marqué « jouets » (norme EN 71-3).'];
+
+TOOLS['m-coffre']={nom:'Coffre à jouets',aide:'Une caisse en panneaux avec couvercle à charnière retenu par un compas de sécurité, poignées découpées, sur socle ou sur roulettes.',
+  pic:'<path d="M6 22h36v20H6z"/><path d="M6 22L10 8h32l-4 14"/><path d="M14 30h8M26 30h8"/><circle cx="11" cy="44" r="2"/><circle cx="37" cy="44" r="2"/>',
+  champs:[N('L','Longueur','cm',80),N('D','Profondeur','cm',45),N('H','Hauteur totale','cm',50),N('e','Épaisseur des panneaux','mm',18),S('mat','Matériau',MATS,'cp'),
+    S('pied','Dessous',[['plinthe','Socle en retrait'],['roul','4 roulettes'],['sol','Posé au sol, sur patins']],'plinthe'),
+    N('so','Hauteur du socle','cm',6,{k:'pied',v:['plinthe']}),
+    S('couv','Couvercle',[['charn','À charnière, avec compas de sécurité'],['pose','Posé, sans charnière (pour les tout-petits)']],'charn'),
+    C('poi','Poignées découpées dans les côtés',true),C('sep','Cloison au milieu',false)],
+  calc(v){
+    const L=clamp(v.L*10,400,1600), D=clamp(v.D*10,250,700), H=clamp(v.H*10,250,900), e=clamp(v.e,12,25), ch=v.couv==='charn';
+    const hs=v.pied==='plinthe'?clamp(v.so*10,30,150):v.pied==='roul'?65:0, jour=ch?10:0, deb=10;
+    const Hw=Math.max(120,H-hs-2*e-jour), y0=hs+e, yt=y0+Hw, Di=D-2*e, Li=L-2*e;
+    const pc={}, P=[], Q={}, st=[], notes=[], warns=[], info=[];
+    pc.dr=B3('dr',0,y0,0,L,Hw,e,'p'); pc.dv=B3('dv',0,y0,D-e,L,Hw,e,'p');
+    pc.cg=B3('cg',0,y0,e,e,Hw,Di,'p'); pc.cd=B3('cd',L-e,y0,e,e,Hw,Di,'p');
+    pc.fo=B3('fo',0,hs,0,L,e,D,'p');
+    const hp=30, lp=Math.min(120,Di*0.45), yp=yt-60-hp, pg=[];
+    if(v.poi){ pc.pg=B3('pg',-0.8,yp,D/2-lp/2,0.8,hp,lp,'o'); pc.pd=B3('pd',L,yp,D/2-lp/2,0.8,hp,lp,'o'); pg.push('pg','pd'); }
+    const so=[];
+    if(v.pied==='plinthe'){ const r=10;
+      pc.s1=B3('s1',r,0,r,L-2*r,hs,e,'p'); pc.s2=B3('s2',r,0,D-r-e,L-2*r,hs,e,'p'); pc.s3=B3('s3',r,0,r+e,e,hs,D-2*r-2*e,'p'); pc.s4=B3('s4',L-r-e,0,r+e,e,hs,D-2*r-2*e,'p'); so.push('s1','s2','s3','s4');
+      P.push({nom:'Socle, devant et derrière',q:2,L:L-2*r,l:hs,e,t:'p',ch:L-2*r},{nom:'Socle, côtés',q:2,L:D-2*r-2*e,l:hs,e,t:'p',ch:0,note:'en retrait de 1 cm sous le fond'}); }
+    if(v.pied==='roul') [[60,60],[L-90,60],[60,D-60],[L-90,D-60]].forEach(([x,z],i)=>{ const a='rp'+i, b='rr'+i;
+      pc[a]=B3(a,x-10,hs-12,z-25,50,12,50,'met'); pc[b]=PX3(b,rond(z,26,24,24,16),x+5,20,'rou'); so.push(a,b); });
+    const cs=[];
+    if(v.sep){ pc.sp=B3('sp',L/2-e/2,y0,e,e,Hw-30,Di,'p'); cs.push('sp'); P.push({nom:'Cloison',q:1,L:Di,l:Hw-30,e,t:'p',ch:Di,note:'3 cm plus basse que les côtés'}); }
+    const Lc=L+2*deb, Dc=D+deb;
+    P.unshift({nom:'Devant et derrière',q:2,L,l:Hw,e,t:'p',ch:L},{nom:'Côté',q:2,L:Di,l:Hw,e,t:'p',ch:Hw,note:v.poi?`poignée découpée de ${cm(lp)} × ${cm(hp)} cm, à ${cm(60)} cm du haut`:''},
+      {nom:'Fond',q:1,L,l:D,e,t:'p',ch:0,note:'vissé sous les quatre côtés'});
+    P.push({nom:'Couvercle',q:1,L:Lc,l:Dc,e,t:'p',ch:2*Lc+2*Dc,note:'déborde de 1 cm devant et sur les côtés, arêtes arrondies'});
+    const k=Hw<=300?3:4, vs=visDe(e);
+    addQ(Q,`Vis à bois ${vs}`,4*k+Math.ceil(2*(L+D)/150)+(v.sep?4:0)+(so.length&&v.pied==='plinthe'?8:0)); addQ(Q,'Colle à bois vinylique (flacon)',1);
+    const cv=[];
+    if(ch){ const a=72*Math.PI/180;
+      pc.cv=PX3('cv',abattant(0,yt+jour,0,Dc,e,a),-deb,Lc,'p'); cv.push('cv');
+      const zA=D*0.42, pB=[0+zA*Math.cos(a)-2*Math.sin(a),yt+jour+zA*Math.sin(a)];
+      pc.k1=barre3('k1',e,4,[D*0.30,yt-170],pB,14,'met'); pc.k2=barre3('k2',L-e-4,4,[D*0.30,yt-170],pB,14,'met'); cv.push('k1','k2');
+      Q['Charnière piano (à recouper à la longueur)']=`${cm(L)} cm`;
+      addQ(Q,'Compas de sécurité pour coffre à jouets (maintien en toute position)',L>700?2:1);
+      addQ(Q,'Butoirs caoutchouc 10 mm (sous le couvercle, à l’avant)',2);
+      if(!v.poi) warns.push('Sans poignées découpées, percez 2 trous d’aération de Ø 25 mm dans chaque côté, en haut.');
+      notes.unshift(...SECU_COFFRE); }
+    else { pc.cv=B3('cv',-deb,yt,0,Lc,e,Dc,'p'); pc.t1=B3('t1',e+2,yt-20,e+2,20,20,Di-4,'m'); pc.t2=B3('t2',L-e-22,yt-20,e+2,20,20,Di-4,'m'); pc.cv.sur=['t1','t2']; cv.push('t1','t2','cv');
+      P.push({nom:'Tasseau sous le couvercle',q:2,L:Di-4,l:20,t:'t',sec:'20 × 20',note:'collé sous le couvercle, juste à l’intérieur des côtés : il empêche le couvercle de glisser'});
+      addQ(Q,'Vis à bois 4 × 30 mm (tasseaux)',6); notes.unshift(SECU_COFFRE[1],SECU_COFFRE[2]); }
+    if(v.pied==='roul'){ addQ(Q,'Roulettes pivotantes Ø 50 mm (dont 2 à frein)',4); addQ(Q,'Vis à bois 4 × 16 mm (roulettes)',16); notes.push('Les roulettes se vissent dans le fond : il doit faire au moins 15 mm d’épaisseur.'); }
+    if(v.pied==='sol') addQ(Q,'Patins feutre',4);
+    if(L>1000&&!v.sep) warns.push('Plus d’1 m de long : une cloison au milieu raidit le coffre et évite que le fond plie.');
+    if(v.mat==='osb') notes.push('L’OSB peut laisser des échardes : poncez très soigneusement l’intérieur, ou préférez le contreplaqué pour un coffre d’enfant.');
+    info.push(`Volume utile : environ ${fr(Li*Di*(Hw)/1e6,0)} litres`,`Profondeur intérieure : ${cm(Hw)} cm`);
+    const fy=[y0+40,y0+Hw-40].concat(k>2?[y0+Hw/2]:[]), vF=fy.flatMap(y=>[[e/2,y,D],[L-e/2,y,D]]);
+    st.push({t:'Les quatre côtés',x:`Arrondissez d’abord les arêtes du haut${v.poi?' et découpez les poignées dans les côtés (2 trous de Ø 30 mm aux bouts, puis la scie sauteuse entre les deux)':''}. Vissez le devant et le derrière sur les bouts des côtés : ${k} vis ${vs} par angle, avec colle. Vérifiez l’équerre : les deux diagonales doivent être égales.`,add:['dr','cg','cd','dv',...pg],vis:vF});
+    st.push({t:'Le fond',x:`Retournez la caisse, encollez les chants et vissez le fond dessous, tous les 15 cm.`,add:['fo'],vis:[]});
+    if(v.pied==='plinthe') st.push({t:'Le socle',x:`Assemblez les 4 pièces du socle en cadre, puis vissez-le sous le fond, en retrait de 1 cm tout autour.`,add:so,vis:[]});
+    if(v.pied==='roul') st.push({t:'Les roulettes',x:'Vissez les 4 roulettes sous le fond, à 5 cm des angles : celles à frein devant.',add:so,vis:[]});
+    if(cs.length) st.push({t:'La cloison',x:'Glissez la cloison au milieu et vissez-la à travers le devant, le derrière et le fond (2 vis par côté).',add:cs,vis:[]});
+    st.push(ch?{t:'Le couvercle',x:`Vissez la charnière piano sur le chant arrière du derrière et sous le couvercle. Collez les 2 butoirs devant, sous le couvercle : ils laissent un jour de 1 cm qui protège les doigts et laisse passer l’air. Posez le compas de sécurité selon sa notice et réglez-le pour que le couvercle reste ouvert où on le lâche.`,add:cv,vis:[]}
+      :{t:'Le couvercle',x:'Collez et vissez les deux tasseaux sous le couvercle, juste à l’intérieur des côtés. Le couvercle se pose sans pouvoir glisser, et un enfant le soulève facilement.',add:cv,vis:[]});
+    const ferme=Object.values(pc).filter(p=>!['cv','k1','k2'].includes(p.id)); if(ch) ferme.push(B3('cvF',-deb,yt+jour,0,Lc,e,Dc,'p'));
+    const out=meuble(v,{m3d:{pc,st,cotes:{W:L,H,D}},titre:'Coffre à jouets',pieces:P,q:Q,notes,warns,info,vue:vueAuto(ferme,'z',{titre:'Coffre vu de face'})});
+    return {...out,big:`Coffre à jouets ${cm(L)} × ${cm(D)} cm · ${fr(Li*Di*Hw/1e6,0)} litres`};
+  }};
+
+TOOLS['m-coffre-banc']={nom:'Banc-coffre',aide:'Un banc avec un coffre sous l’assise, qui se soulève : pour l’entrée, une chambre d’enfant ou une terrasse couverte. Simple, ou avec dossier et accoudoirs.',
+  pic:'<path d="M6 24h36v6H6z"/><path d="M8 30v14M40 30v14M8 38h32"/><path d="M6 24V8M42 24V8M6 10h36"/>',
+  champs:[S('forme','Modèle',[['dossier','Avec dossier et accoudoirs'],['simple','Simple, sans dossier']],'dossier'),
+    N('L','Longueur','cm',110),N('D','Profondeur','cm',42),N('H','Hauteur du coffre (sans coussin)','cm',42),
+    N('Ha','Hauteur des accoudoirs (du sol)','cm',62,{k:'forme',v:['dossier']}),N('Hd','Hauteur du dossier (du sol)','cm',85,{k:'forme',v:['dossier']}),
+    N('so','Hauteur des pieds sous le coffre','cm',8),N('e','Épaisseur des panneaux','mm',18),S('mat','Matériau',MATS,'cp'),C('cous','Coussin d’assise',true)],
+  calc(v){
+    const dos=v.forme==='dossier', L=clamp(v.L*10,600,2000), D=clamp(v.D*10,320,600), H=clamp(v.H*10,300,550), e=clamp(v.e,15,25), so=clamp(v.so*10,40,200);
+    const Ha=dos?clamp(v.Ha*10,H+100,H+400):0, Hd=dos?clamp(v.Hd*10,Math.max(Ha+50,H+200),1200):0, Li=L-2*e, deb=15, bf=80, ty=27;
+    const pc={}, P=[], Q={}, st=[], notes=[], warns=[], info=[];
+    const hS=dos?Hd:H-e, c=70, ah=Math.min(so-15,60);
+    const base=[[0,0],...(ah>10?[[c,0],...Array.from({length:11},(_,j)=>{ const t=(j+1)/12; return [c+(D-2*c)*t,ah*Math.sin(Math.PI*t)]; }),[D-c,0]]:[]),[D,0]];
+    const haut=dos?[[D,Ha],[D*0.42,Ha],[60,Hd],[0,Hd]]:[[D,hS],[0,hS]];
+    const cote=[...base,...haut];
+    pc.cg=PX3('cg',cote,0,e,'p'); pc.cd=PX3('cd',cote,L-e,e,'p'); pc.cg.v2=pc.cd.v2={x:cote};
+    const hv=H-e-so, hdr=dos?Hd-so:hv;
+    pc.dv=B3('dv',e,so,D-e,Li,hv,e,'p'); pc.dr=B3('dr',e,so,0,Li,hdr,e,'p');
+    pc.ta=B3('ta',e,so,e,Li,ty,ty,'m'); pc.tb=B3('tb',e,so,D-e-ty,Li,ty,ty,'m');
+    pc.fo=B3('fo',e,so+ty,e,Li,e,D-2*e,'p'); pc.fo.sur=['ta','tb'];
+    const mil=Li>1000, cs=[];
+    if(mil){ pc.sp=B3('sp',L/2-e/2,so+ty+e,e,e,H-e-so-ty-e,D-2*e,'p'); cs.push('sp'); }
+    const yA=H-e, ab=[];
+    let La, Da;
+    if(dos){ pc.bf=B3('bf',e,yA,e,Li,e,bf,'p'); La=Li-4; Da=D-e-bf-2+deb; pc.as=B3('as',e+2,yA,e+bf+2,La,e,Da,'p'); ab.push('bf','as'); }
+    else { La=L+2*deb; Da=D+deb; pc.as=B3('as',-deb,yA,0,La,e,Da,'p'); ab.push('as'); }
+    if(v.cous){ const z0=dos?e+8:8, x0=dos?e+8:8; pc.cu=B3('cu',x0,H,z0,(dos?Li:L)-16,50,D-z0-8,'cous'); pc.cu.sur=ab.slice(); }
+    P.push({nom:'Côté (pied)',q:2,L:hS,l:D,e,t:'p',ch:0,note:(ah>10?`arche en bas de ${cm(ah)} cm de haut, pieds de ${cm(c)} cm`:'')+(dos?`${ah>10?' ; ':''}accoudoir à ${cm(Ha)} cm, dossier à ${cm(Hd)} cm (tracez un gabarit)`:'')});
+    P.push({nom:'Devant',q:1,L:Li,l:hv,e,t:'p',ch:Li},{nom:dos?'Derrière et dossier (une seule pièce)':'Derrière',q:1,L:Li,l:hdr,e,t:'p',ch:dos?Li:0});
+    P.push({nom:'Tasseau sous le fond',q:2,L:Li,l:ty,t:'t',sec:`${ty} × ${ty}`},{nom:'Fond',q:1,L:Li,l:D-2*e,e,t:'p',ch:0});
+    if(mil) P.push({nom:'Cloison du milieu (renfort)',q:1,L:D-2*e,l:H-e-so-ty-e,e,t:'p',ch:0});
+    if(dos) P.push({nom:'Bande fixe de l’assise',q:1,L:Li,l:bf,e,t:'p',ch:Li});
+    P.push({nom:'Abattant (assise)',q:1,L:La,l:Da,e,t:'p',ch:2*La+2*Da,note:dos?'2 mm de jeu de chaque côté, déborde de 1,5 cm devant':'déborde de 1,5 cm devant et sur les côtés'});
+    const vs=visDe(e);
+    addQ(Q,`Vis à bois ${vs}`,2*2*4+(dos?2*4+6:0)+(mil?6:0)); addQ(Q,'Vis à bois 4 × 40 mm (tasseaux et fond)',2*Math.ceil(Li/150)+6); addQ(Q,'Colle à bois vinylique (flacon)',1);
+    Q['Charnière piano (à recouper à la longueur)']=`${cm(dos?La:Li)} cm`;
+    addQ(Q,'Compas de sécurité pour coffre (maintien en toute position)',2); addQ(Q,'Butoirs caoutchouc 5 mm (sous l’assise)',2);
+    if(v.cous) Q['Mousse de 5 cm (densité 30 kg/m³ au moins) et housse']=`${cm((dos?Li:L)-16)} × ${cm(D-(dos?e+16:16))} cm`;
+    notes.unshift(SECU_COFFRE[0],SECU_COFFRE[1]);
+    notes.push('Hauteur d’assise confortable : 45 cm environ coussin compris (le coussin ajoute 4 à 5 cm).','Pour une terrasse couverte, prenez du contreplaqué extérieur (CTB-X) et une peinture ou une lasure extérieure.');
+    if(dos) notes.push('Le dossier est droit : pour plus de confort, posez un coussin de dos ou inclinez-le en recoupant le haut des côtés.');
+    if(Li>1000) info.push('Plus d’1 m entre les côtés : une cloison au milieu est prévue pour porter l’assise.');
+    info.push(`Volume du coffre : environ ${fr(Li*(D-2*e)*(H-e-so-ty-e)/1e6,0)} litres`,`Hauteur d’assise${v.cous?' avec le coussin':''} : ${cm(H+(v.cous?50:0))} cm`);
+    if(H+(v.cous?50:0)>500) warns.push('Assise à plus de 50 cm : c’est haut pour s’asseoir, les pieds ne toucheront pas bien le sol.');
+    const pz=[so+40,H-e-40,(so+H)/2].map(y=>[[0,y,D-e/2],[0,y,e/2]]).flat();
+    st.push({t:'Les côtés',x:`Tracez le profil des côtés sur un carton${ah>10?' (arche en bas tracée avec une latte souple)':''}${dos?', avec l’accoudoir et le haut du dossier':''}, reportez-le sur les deux panneaux et découpez à la scie sauteuse. Poncez les courbes.`,add:['cg'],vis:[]});
+    st.push({t:'Devant et derrière',x:`Collez et vissez les 2 tasseaux en bas du devant et du derrière, côté intérieur. Vissez ensuite le devant et le derrière${dos?' (qui monte jusqu’en haut du dossier)':''} entre les côtés, ${cm(so)} cm au-dessus du sol : 4 vis par bout.`,add:['ta','tb','dv','dr','cd'],vis:pz});
+    st.push({t:'Le fond',x:'Posez le fond sur les tasseaux et vissez-le par-dessus, tous les 15 cm.',add:['fo'],vis:[]});
+    if(mil) st.push({t:'La cloison du milieu',x:'Vissez la cloison au milieu, à travers le devant et le derrière : elle porte l’assise quand on s’assoit au centre.',add:cs,vis:[]});
+    st.push({t:'L’assise',x:dos?`Vissez la bande fixe en haut, contre le dossier, dans les côtés et le derrière. Reliez-la à l’abattant avec la charnière piano, collez les butoirs sous l’abattant et posez les 2 compas de sécurité.`:`Reliez l’abattant au haut du derrière avec la charnière piano, collez les butoirs dessous et posez les 2 compas de sécurité.`,add:ab,vis:[]});
+    if(v.cous) st.push({t:'Le coussin',x:'Posez le coussin. Des bandes auto-agrippantes sous la housse l’empêchent de glisser.',add:['cu'],vis:[]});
+    const out=meuble(v,{m3d:{pc,st,cotes:{W:L,H:dos?Hd:H,D}},titre:'Banc-coffre',pieces:P,q:Q,notes,warns,info,
+      vue:vueAuto(Object.values(pc),'x',{titre:'Vue de côté'})});
+    return {...out,big:`Banc-coffre ${dos?'avec dossier':'simple'} · ${cm(L)} × ${cm(D)} cm`};
+  }};
+
+TOOLS['m-malle']={nom:'Malle en planches',aide:'Un coffre rustique en planches de bois massif vissées sur des montants d’angle, couvercle plat ou bombé comme une malle d’autrefois, avec ferrures.',
+  pic:'<path d="M6 24h36v18H6z"/><path d="M6 24c0-10 8-14 18-14s18 4 18 14"/><path d="M6 30h36M6 36h36M22 24v6h4v-6"/>',
+  champs:[N('L','Longueur','cm',90),N('D','Profondeur','cm',45),N('H','Hauteur de la caisse (sans couvercle)','cm',42),N('b','Largeur des planches','cm',14),N('e','Épaisseur des planches','mm',20),
+    S('couv','Couvercle',[['bombe','Bombé, en lattes (malle d’autrefois)'],['plat','Plat, en planches sur barres']],'bombe'),
+    C('fer','Coins, poignées et moraillon décoratifs en métal',true),BOIS_T],
+  calc(v){
+    const L=clamp(v.L*10,400,1600), D=clamp(v.D*10,250,700), e=clamp(v.e,15,30), b=clamp(v.b*10,60,250), n=clamp(Math.round(v.H*10/b),2,10), Hc=n*b, s=34, Di=D-2*e, deb=10;
+    const pc={}, P=[], Q={}, st=[], notes=[], warns=[], info=[], y0=e;
+    const fa=[], fb=[], mo=[];
+    for(let i=0;i<n;i++){ const y=y0+i*b, a='pv'+i, r='pr'+i, g='pg'+i, d='pd'+i;
+      pc[a]=B3(a,0,y,D-e,L,b-1,e,'p'); pc[r]=B3(r,0,y,0,L,b-1,e,'p'); fa.push(r,a);
+      pc[g]=B3(g,0,y,e,e,b-1,Di,'p'); pc[d]=B3(d,L-e,y,e,e,b-1,Di,'p'); fb.push(g,d); }
+    [[e,e],[L-e-s,e],[e,D-e-s],[L-e-s,D-e-s]].forEach(([x,z],i)=>{ const id='mo'+i; pc[id]=B3(id,x,y0,z,s,Hc-2,s,'m'); mo.push(id); });
+    const nf=Math.ceil(D/b-0.15), lf=Math.round(D/nf), fo=[];
+    for(let i=0;i<nf;i++){ const id='fo'+i; pc[id]=B3(id,0,0,i*lf,L,e,lf-1,'p'); fo.push(id); }
+    P.push({nom:'Planche devant et derrière',q:2*n,L,l:b,t:'m',sec:`${e} × ${b}`},{nom:'Planche de côté',q:2*n,L:Di,l:b,t:'m',sec:`${e} × ${b}`},
+      {nom:'Montant d’angle (intérieur)',q:4,L:Hc-2,l:s,t:'m',sec:`${s} × ${s}`},{nom:'Planche du fond',q:nf,L,l:b,t:'m',sec:`${e} × ${b}`,note:lf<b-2?`toutes recoupées à ${cm(lf)} cm de large`:''});
+    const yt=y0+Hc, cv=[]; let nl=0, f=0;
+    if(v.couv==='plat'){ const Dc=D+deb, nc=Math.ceil(Dc/b-0.15), lc=Math.round(Dc/nc), nb=L>900?3:2;
+      for(let i=0;i<nc;i++){ const id='cp'+i; pc[id]=B3(id,-deb,yt,i*lc,L+2*deb,e,lc-1,'p'); cv.push(id); }
+      for(let j=0;j<nb;j++){ const id='cb'+j, x=j===0?e+s+20:j===nb-1?L-e-s-20-e:L/2-e/2; pc[id]=B3(id,x,yt-70,e+3,e,70,Di-6,'m'); cv.unshift(id); }
+      P.push({nom:'Planche du couvercle',q:nc,L:L+2*deb,l:b,t:'m',sec:`${e} × ${b}`,note:lc<b-2?`toutes recoupées à ${cm(lc)} cm de large`:''},{nom:'Barre sous le couvercle',q:nb,L:Di-6,l:70,t:'m',sec:`${e} × 70`,note:'dépasse sous le couvercle : elle le cale sur la caisse'});
+      addQ(Q,'Vis à bois 4 × 40 mm (couvercle)',nc*nb*2); }
+    else { f=Math.round(D*0.22); const hj=40, R=(D*D/4+f*f)/(2*f), zc=D/2, yc=yt+hj+f-R, a0=Math.asin((D/2)/R), el=12;
+      const lg=R*2*a0; nl=Math.max(4,Math.ceil(lg/70)); const da=2*a0/nl;
+      const joue=[[0,yt],[D,yt],[D,yt+hj],...Array.from({length:15},(_,j)=>{ const t=-a0+2*a0*(j+1)/16; return [zc+R*Math.sin(t),yc+R*Math.cos(t)]; }).reverse(),[0,yt+hj]];
+      pc.jg=PX3('jg',joue,0,e,'p'); pc.jd=PX3('jd',joue,L-e,e,'p'); cv.push('jg','jd');
+      pc.ar=B3('ar',e,yt,0,L-2*e,hj,e,'p'); pc.av=B3('av',e,yt,D-e,L-2*e,hj,e,'p'); cv.push('ar','av');
+      for(let i=0;i<nl;i++){ const t1=-a0+i*da, t2=t1+da, id='la'+i, P2=(r,t)=>[zc+r*Math.sin(t),yc+r*Math.cos(t)];
+        pc[id]=PX3(id,[P2(R,t1),P2(R,t2),P2(R+el,t2),P2(R+el,t1)],0,L,'p'); cv.push(id); }
+      P.push({nom:'Joue du couvercle (bout cintré)',q:2,L:D,l:hj+f,t:'m',sec:`${e} × ${Math.round(hj+f)}`,note:`droite sur ${cm(hj)} cm puis en arc de ${cm(f)} cm de flèche`},
+        {nom:'Bande du couvercle (devant et derrière)',q:2,L:L-2*e,l:hj,t:'m',sec:`${e} × ${hj}`},
+        {nom:'Latte du dessus',q:nl,L,l:Math.round(lg/nl),t:'m',sec:`${el} × ${Math.round(lg/nl)}`,note:'chants légèrement chanfreinés pour suivre la courbe'});
+      addQ(Q,'Vis à bois 3,5 × 30 mm (lattes)',nl*4); addQ(Q,'Vis à bois 4 × 50 mm (cadre du couvercle)',8);
+      info.push(`Couvercle bombé : ${nl} lattes, flèche de ${cm(f)} cm`); }
+    const fe=[];
+    if(v.fer){ const w=50, t=2, ys=[0,yt-w];
+      [[0,0,-t,0],[L,0,0,0],[0,D,-t,0],[L,D,0,0]].forEach(([x,z],c)=>ys.forEach((y,j)=>{ const a='fa'+c+j, bb='fb'+c+j;
+        pc[a]=B3(a,x===0?0:L-w,y,z===0?-t:D,w,w,t,'met'); pc[bb]=B3(bb,x===0?-t:L,y,z===0?0:D-w,t,w,w,'met'); fe.push(a,bb); }));
+      pc.hg=B3('hg',-12,yt-b*0.9,D/2-60,12,25,120,'met'); pc.hd=B3('hd',L,yt-b*0.9,D/2-60,12,25,120,'met'); fe.push('hg','hd');
+      pc.mr=B3('mr',L/2-20,yt-60,D,40,90,4,'met'); fe.push('mr');
+      addQ(Q,'Coins de malle en métal (avec clous ou vis)',8); addQ(Q,'Poignées de malle à anneau',2); addQ(Q,'Moraillon décoratif (sans cadenas)',1); }
+    addQ(Q,'Vis à bois 4 × 50 mm (planches sur montants)',16*n); addQ(Q,'Vis à bois 4 × 40 mm (fond)',nf*4); addQ(Q,'Colle à bois vinylique (flacon)',1);
+    addQ(Q,L>1000?'Charnières décoratives (3)':'Charnières décoratives',L>1000?3:2); addQ(Q,'Compas ou chaînette de retenue du couvercle',L>800?2:1); addQ(Q,'Patins feutre',4);
+    notes.push('Prenez des planches bien sèches et droites (rabotées, 4 faces). Laissez 1 mm entre deux planches : le bois bouge un peu avec l’humidité.',
+      'Bois de palette : seulement s’il porte le marquage HT (traité à la chaleur), jamais MB. Brossez-le, rabotez-le et poncez-le bien.',
+      'Un vieux style : teinte « noyer » ou brou de noix, puis cire. Ferrures noires ou laiton vieilli.',
+      'S’il sert de coffre à jouets : un compas « spécial coffre à jouets » retient le couvercle dans toutes les positions, pour qu’il ne retombe pas sur la tête ou les doigts.',
+      'Le moraillon est décoratif : ne mettez jamais de cadenas sur un coffre où un enfant pourrait se glisser.');
+    info.push(`Hauteur de la caisse : ${cm(Hc)} cm (${n} planches de ${cm(b)} cm)`,`Volume utile : environ ${fr((L-2*e)*Di*(Hc)/1e6,0)} litres`,...barres(P));
+    st.push({t:'Devant et derrière',x:`Posez les ${n} planches du devant à plat, côte à côte (1 mm d’écart), avec deux montants dessous à ${cm(e)} cm des bouts. Vissez et collez chaque planche sur les montants : 2 vis par montant. Faites pareil pour le derrière.`,add:[...mo,...fa],vis:fa.filter(x=>x.startsWith('pv')).flatMap(id=>{ const y=pc[id].c[1]; return [[e+s/2,y-b/5,D],[e+s/2,y+b/5,D],[L-e-s/2,y-b/5,D],[L-e-s/2,y+b/5,D]]; })});
+    st.push({t:'Les côtés',x:`Mettez le devant et le derrière debout et vissez les planches des côtés sur les montants, entre les deux faces : 2 vis par bout.`,add:fb,vis:[]});
+    st.push({t:'Le fond',x:`Retournez la caisse et vissez les planches du fond dessous, dans les chants des côtés : 4 vis par planche.`,add:fo,vis:[]});
+    st.push(v.couv==='plat'?{t:'Le couvercle',x:'Posez les planches du couvercle à l’envers, côte à côte. Vissez les barres dessus, à 2 cm à l’intérieur des côtés de la caisse : elles tiennent les planches et calent le couvercle.',add:cv,vis:[]}
+      :{t:'Le couvercle bombé',x:`Tracez l’arc des deux joues avec une latte souple (flèche ${cm(f)} cm) et découpez-les. Assemblez le cadre (joues et bandes). Vissez les ${nl} lattes sur les joues, en commençant par le bas de chaque côté, chants un peu chanfreinés pour qu’elles se touchent.`,add:cv,vis:[]});
+    st.push({t:v.fer?'Charnières et ferrures':'Charnières',x:`Vissez les charnières à l’arrière, puis le compas ou la chaînette qui retient le couvercle ouvert.${v.fer?' Terminez par les coins, les poignées sur les côtés et le moraillon devant.':''}`,add:fe,vis:[]});
+    const out=meuble({...v,e,mat:'massif'},{m3d:{pc,st,cotes:{W:L,H:yt,D}},titre:'Malle',pieces:P,q:Q,notes,warns,info,vis:true,
+      vue:vueAuto(Object.values(pc).filter(p=>!fe.includes(p.id)),'z',{titre:'Malle vue de face'})});
+    return {...out,big:`Malle ${cm(L)} × ${cm(D)} cm · ${n} planches de haut`};
   }};
 
 function symbolesHTML(){
