@@ -331,6 +331,7 @@ i.k-te{background:repeating-linear-gradient(90deg,var(--c-te) 0 7px,var(--c-te2)
 .iso-c{stroke:var(--ink);stroke-width:1.2;vector-effect:non-scaling-stroke;fill:none}
 .iso text{fill:var(--ink);font-family:var(--body);font-weight:700}
 .mv .mv-trait{fill:none;stroke:#2a1d12;stroke-width:1.4;vector-effect:non-scaling-stroke}
+.mv .mv-v{fill:#bfe3f2;fill-opacity:.55;stroke:#4f8aa6;stroke-width:1.2;vector-effect:non-scaling-stroke}
 .mv .mv-met{fill:#bfc5cc;stroke:#6b737c;stroke-width:1.2;vector-effect:non-scaling-stroke}
 .mv .mv-b{fill:#6b1f2a;fill-opacity:.85;stroke:#3d0f16;stroke-width:1;vector-effect:non-scaling-stroke}
 
@@ -1716,7 +1717,7 @@ const FAMILLES = [
   {id:'sols',       nom:'Sols',       desc:'Carrelage, parquet, terrasse, chape, ragréage', outils:['carrelage','parquet','plinthes','terrasse',{g:'Chape et ragréage',outils:['chape','ragreage']}]},
   {id:'maconnerie', nom:'Maçonnerie', desc:'Béton, fondations, parpaings', outils:['beton','fondations','mortier','crepi','parpaings','pente']},
   {id:'menuiserie', nom:'Menuiserie', desc:'Étagères, meubles, coffres, tables, finitions',  outils:[{g:'Étagères',outils:['m-etagere','m-murale','m-echelle','m-angle','m-angle-mont','m-angle-ech']},{g:'Meubles',outils:['m-biblio','m-bas','m-placard']},{g:'Coffres',outils:['m-coffre','m-coffre-banc','m-malle']},{g:'Casiers',outils:['m-casier','m-bouteilles']},{g:'Tables et tabourets',outils:['m-tbasse','m-tsalon','m-sellette','m-tabouret']},'m-etabli','finitions']},
-  {id:'jardin',     nom:'Jardin',     desc:'Nichoir, abri à insectes, table, compost, poulaillers, balançoires', outils:[{g:'Oiseaux et insectes',outils:['j-nichoir','j-mangeoire','j-insectes']},{g:'Jardinières',outils:['j-jardiniere','j-echelle','j-gradins']},'j-terrasse','j-pique','j-compost','j-poulailler','j-balancoire']},
+  {id:'jardin',     nom:'Jardin',     desc:'Nichoir, abri à insectes, table, compost, châssis à semis, poulaillers, balançoires', outils:[{g:'Oiseaux et insectes',outils:['j-nichoir','j-mangeoire','j-insectes']},{g:'Jardinières',outils:['j-jardiniere','j-echelle','j-gradins']},'j-chassis','j-terrasse','j-pique','j-compost','j-poulailler','j-balancoire']},
   {id:'objets',     nom:'Petits objets', desc:'Plateau tournant, boîtes, porte-clés, porte-pinceaux', outils:[{g:'Cuisine',outils:['o-plateau','o-planche']},{g:'Boîtes',outils:['o-bijoux','o-tiroir','o-caisse']},{g:'Au mur',outils:['o-cles','o-jmurale']},'o-pinceaux']},
   {id:'isolation',  nom:'Isolation',  desc:'Isolants, épaisseurs', outils:['isolants','epaisseurs','isol-qte']},
   {id:'plomberie',  nom:'Plomberie',  desc:'Tuyaux, équipements, évacuations', outils:[{g:'Alimentation',outils:['tuyaux','assemblages','equipements']},'evacuations']},
@@ -3416,7 +3417,7 @@ function hull2(pts){ const p=[...pts].sort((a,b)=>a[0]-b[0]||a[1]-b[1]), cr=(o,a
   return lo.slice(0,-1).concat(hi.slice(0,-1)); }
 /* ax : 'z' vue de face, 'x' vue de côté, 'y' vue de dessus */
 function vueAuto(pcs,ax,o={}){
-  const CL={p:'mv-p',m:'mv-m',o:'mv-b',met:'mv-met',f:'mv-p',d:'mv-m',ter:'mv-m',ca:'mv-p',v:'mv-met',nw:'mv-m',jm:'mv-m'};
+  const CL={p:'mv-p',m:'mv-m',o:'mv-b',met:'mv-met',f:'mv-p',d:'mv-m',ter:'mv-m',ca:'mv-p',v:'mv-met',vit:'mv-v',nw:'mv-m',jm:'mv-m'};
   const uv=ax==='z'?q=>[q[0],q[1]]:ax==='x'?q=>[q[2],q[1]]:q=>[q[0],-q[2]], dp=ax==='z'?2:ax==='x'?0:1;
   const ps=pcs.filter(p=>p&&p.cl!=='mur'&&!(o.sauf||[]).includes(p.id)).sort((a,b)=>a.c[dp]-b.c[dp]);
   const polys=ps.map(p=>({cl:CL[p.cl]||'mv-p',poly:(p.v2&&p.v2[ax])||hull2(p.faces.flat().map(uv))}));
@@ -3596,6 +3597,189 @@ TOOLS['j-compost']={nom:'Bac à compost',aide:'Un composteur en bois à 1, 2 ou 
     return {...out,big:`Bac à compost ${n>1?n+' compartiments':''} · ${fr(vol*1000,0)} L`.replace('  ',' ')};
   }};
 
+
+/* ============ JARDIN : CHÂSSIS À SEMIS ============ */
+/* Trois modèles :
+   - châssis au sol, une pente : un coffre en planches plus haut derrière que devant, couvercles relevables à charnières derrière ;
+   - châssis sur pieds : le même coffre, monté sur 4 pieds avec un fond à claire-voie, pour semer sans se baisser ;
+   - châssis à deux pentes : deux pignons en pointe et une faîtière, des couvercles qui s'ouvrent des deux côtés.
+   Couvercles : cadre de tasseaux et polycarbonate alvéolaire, ou vieilles fenêtres de récupération (le coffre se cale alors sur leurs mesures).
+   Repère : x le long du châssis, z de l'arrière (z = 0, côté nord) vers l'avant (côté sud), y vers le haut. */
+TEINTE.vit=[195,55,84];
+function clipDemi(poly,f){ const out=[], n=poly.length;
+  for(let i=0;i<n;i++){ const A=poly[i], B=poly[(i+1)%n], fa=f(A), fb=f(B);
+    if(fa>=0) out.push(A);
+    if((fa>=0)!==(fb>=0)){ const t=fa/(fa-fb); out.push([A[0]+t*(B[0]-A[0]),A[1]+t*(B[1]-A[1])]); } }
+  return out; }
+TOOLS['j-chassis']={nom:'Châssis à semis',aide:'Un coffre en bois fermé par un couvercle transparent : les semis y lèvent plus tôt, à l’abri du froid, du vent et des limaces. Trois modèles : au sol à une pente, sur pieds à hauteur de table, ou à deux pentes. Couvercles en polycarbonate, ou vieilles fenêtres de récupération.',
+  pic:'<path d="M6 42V20l36 10v12z"/><path d="M6 20L36 6"/><path d="M22 42v-7M22 37c-4 0-6-2-6-6 4 0 6 2 6 6zM22 35c3 0 5-2 5-5-3 0-5 2-5 5z"/>',
+  champs:[S('mod','Modèle',[['sol','Châssis au sol, une pente (le classique)'],['table','Châssis sur pieds, à hauteur de table'],['double','Châssis à deux pentes, qui s’ouvre des deux côtés']],'sol'),
+    S('couv','Couvercles',[['poly','Cadre en bois et polycarbonate alvéolaire'],['fenetre','Vieilles fenêtres de récupération']],'poly'),
+    N('L','Longueur','cm',120,{k:'couv',v:['poly']}),N('P','Profondeur','cm',80,{k:'couv',v:['poly']}),
+    N('fl','Largeur d’une fenêtre (cadre compris)','cm',60,{k:'couv',v:['fenetre']}),N('fh','Hauteur d’une fenêtre (cadre compris)','cm',90,{k:'couv',v:['fenetre']}),
+    N('nf','Nombre de fenêtres côte à côte','',2,{k:'couv',v:['fenetre']}),
+    N('Har','Hauteur à l’arrière','cm',45,{k:'mod',v:['sol','table']}),N('Hav','Hauteur à l’avant','cm',15,{k:'mod',v:['sol','table']}),
+    N('Hc','Hauteur des côtés','cm',15,{k:'mod',v:['double']}),N('Hf','Hauteur au faîtage (au milieu)','cm',45,{k:'mod',v:['double']}),
+    N('hp','Hauteur des pieds sous le coffre','cm',70,{k:'mod',v:['table']}),
+    N('bl','Largeur des planches','cm',14.5),N('e','Épaisseur des planches','mm',21),BOIS_J],
+  calc(v){ return chassisCalc(v); }};
+
+function chassisCalc(v){
+  const mod=v.mod==='table'||v.mod==='double'?v.mod:'sol', dbl=mod==='double', tab=mod==='table', fen=v.couv==='fenetre';
+  const e=clamp(v.e,15,32), bl=clamp(v.bl*10,90,250), sp=45, ov=20, yb=tab?clamp(v.hp*10,300,1000):0;
+  const pc={}, P=[], Q={}, warns=[], info=[], notes=[], st=[];
+  const ids={pi:[],co:[],li:[],fa:[],ar:[],av:[],ce:[],ta:[],fd:[],cad:[],vit:[]};
+  // Hauteurs arrondies à un nombre entier de planches
+  const rangs=h=>Math.max(1,Math.ceil(h/bl-0.15));
+  let nBas, nHaut;
+  if(dbl){ nBas=rangs(v.Hc*10); nHaut=Math.max(nBas+1,rangs(v.Hf*10)); }
+  else { nBas=rangs(v.Hav*10); nHaut=Math.max(nBas+1,rangs(v.Har*10)); }
+  if((dbl?rangs(v.Hf*10):rangs(v.Har*10))<=nBas) warns.push(dbl?'Le faîtage doit être plus haut que les côtés : il a été relevé d’une planche.':'L’arrière doit être plus haut que l’avant pour que la pluie s’écoule : il a été relevé d’une planche.');
+  const hB=nBas*bl, hH=nHaut*bl, dH=hH-hB;
+  // Couvercles : nombre, largeur, longueur dans la pente
+  let L, Pd, n, wl, gap;
+  const nPentes=dbl?2:1;
+  if(fen){ const fl=clamp(v.fl*10,300,2000), fh=clamp(v.fh*10,300,2000); n=clamp(Math.round(v.nf),1,6); wl=fl; gap=0; L=n*fl;
+    const run=Math.sqrt(Math.max(0,fh*fh-dH*dH))-ov;
+    if(fh<=dH+100) warns.push(`Les fenêtres (${cm(fh)} cm) sont trop courtes pour la pente : il faut plus de ${cm(dH+100)} cm. Diminuez la différence de hauteur ou prenez de plus grandes fenêtres.`);
+    Pd=Math.max(300,Math.round(run*nPentes)); }
+  else { L=clamp(v.L*10,400,4000); Pd=clamp(v.P*10,300,2000); n=Math.max(1,Math.ceil(L/1050)); gap=4; wl=(L-(n-1)*gap)/n; }
+  const demi=dbl?Pd/2:Pd, ta=dH/demi, a=Math.atan(ta), deg=Math.round(a*180/Math.PI), ca=Math.cos(a), sa=Math.sin(a);
+  const YB=yb+hB, YH=yb+hH;
+  // Pente(s) : y ≤ t(z)
+  const plans=dbl?[q=>YB+ta*q[0]-q[1],q=>YB+ta*(Pd-q[0])-q[1]]:[q=>YH-ta*q[0]-q[1]];
+  const tz=z=>dbl?YB+ta*Math.min(z,Pd-z):YH-ta*z;
+  const decoupe=r=>plans.reduce((p,f)=>p.length?clipDemi(p,f):p,r);
+  const rect=(z0,z1,y0,y1)=>[[z0,y0],[z1,y0],[z1,y1],[z0,y1]];
+  const piece=(g,id,x0,w,z0,z1,y0,y1,cl)=>{ const pl=decoupe(rect(z0,z1,y0,y1)); if(pl.length<3) return null;
+    pc[id]=PX3(id,pl,x0,w,cl); ids[g].push(id); const zz=pl.map(q=>q[0]), yy=pl.map(q=>q[1]);
+    return {L:Math.max(...zz)-Math.min(...zz),H:Math.max(...yy)-Math.min(...yy),biais:pl.some(q=>!rect(z0,z1,y0,y1).some(c=>Math.abs(c[0]-q[0])<0.5&&Math.abs(c[1]-q[1])<0.5))}; };
+  // ---- Poteaux d'angle (pieds pour le modèle sur pieds) ----
+  const xs=[e,L-e-sp], zA=e, zV=Pd-e-sp;
+  let hPA=0, hPV=0;
+  xs.forEach((x,i)=>{ hPA=piece('pi','pa'+i,x,sp,zA,zA+sp,0,dbl?YB:YH,'m').H; hPV=piece('pi','pv'+i,x,sp,zV,zV+sp,0,YB,'m').H; });
+  // ---- Côtés (ou pignons) en planches ----
+  const rangsCote=[];
+  for(let r=0;r<nHaut;r++){ const y0=yb+r*bl, res=[0,1].map(c=>piece('co','c'+c+'_'+r,c?L-e:0,e,e,Pd-e,y0,y0+bl,'p')); if(res[0]) rangsCote.push({r,...res[0]}); }
+  // Tasseaux de liaison des côtés (une pente) ou poteaux de pignon (deux pentes)
+  let zc=0, hLi=0;
+  if(dbl){ zc=Pd/2-sp/2; [0,1].forEach(c=>{ const r=piece('li','m'+c,c?L-e-sp:e,sp,zc,zc+sp,yb,YH+5,'m'); if(r) hLi=r.H; }); }
+  else { zc=Math.round(Pd*0.3); [0,1].forEach(c=>{ const r=piece('li','m'+c,c?L-e-27:e,27,zc,zc+45,yb,YH+5,'m'); if(r) hLi=r.H; }); }
+  // ---- Devant et derrière ----
+  const nAr=dbl?nBas:nHaut;
+  for(let r=0;r<nAr;r++){ const id='ar'+r; pc[id]=B3(id,0,yb+r*bl,0,L,bl,e,'p'); ids.ar.push(id); }
+  for(let r=0;r<nBas;r++){ const id='av'+r; pc[id]=B3(id,0,yb+r*bl,Pd-e,L,bl,e,'p'); ids.av.push(id); }
+  // ---- Faîtière (deux pentes) ----
+  if(dbl) piece('fa','fai',e+sp,L-2*e-2*sp,Pd/2-sp/2,Pd/2+sp/2,YH-70,YH+5,'m');
+  // ---- Modèle sur pieds : ceinture basse et fond à claire-voie ----
+  let ns=0, gf=0;
+  const Lc=L-2*e-2*sp, Lf=Pd-2*e;
+  if(tab){
+    [['cbar',0,0,L,e],['cbav',0,Pd-e,L,e]].forEach(([id,x,z,w,d])=>{ pc[id]=B3(id,x,100,z,w,bl,d,'p'); ids.ce.push(id); });
+    [['cbg',0],['cbd',L-e]].forEach(([id,x])=>{ pc[id]=B3(id,x,100,e,e,bl,Lf,'p'); ids.ce.push(id); });
+    [['taa',e],['tab',Pd-e-27]].forEach(([id,z])=>{ pc[id]=B3(id,e+sp,yb,z,Lc,40,27,'m'); ids.ta.push(id); });
+    const Li=L-2*e; ns=Math.max(2,Math.floor((Li+10)/(bl+10))); gf=(Li-ns*bl)/(ns-1);
+    for(let i=0;i<ns;i++){ const id='f'+i; pc[id]=B3(id,e+i*(bl+gf),yb+40,e,bl,e,Lf,'p'); ids.fd.push(id); }
+  }
+  // ---- Couvercles ----
+  const Ls=fen?clamp(v.fh*10,300,2000):(demi+ov)/ca;
+  const caisse=Object.keys(pc);
+  const pentes=dbl?[{O:[Pd/2,YH],dir:-1,s0:3,nom:'arrière'},{O:[Pd/2,YH],dir:1,s0:3,nom:'avant'}]:[{O:[0,YH],dir:1,s0:0}];
+  const hc=fen?40:27, ep=fen?4:6;
+  pentes.forEach((pt,k)=>{
+    const p=(s,d)=>[pt.O[0]+pt.dir*(s*ca+d*sa),pt.O[1]-s*sa+d*ca];
+    const quad=(s0,s1,d0,d1)=>[p(s0,d0),p(s1,d0),p(s1,d1),p(s0,d1)];
+    for(let i=0;i<n;i++){ const x=i*(wl+gap), b=`k${k}l${i}`, s0=pt.s0, s1=pt.s0+Ls;
+      if(fen){ const fw=60, add=(id,x0,w,q)=>{ pc[id]=PX3(id,q,x0,w,'d'); pc[id].sur=caisse; ids.cad.push(id); };
+        add(b+'mg',x,fw,quad(s0,s1,0,hc)); add(b+'md',x+wl-fw,fw,quad(s0,s1,0,hc));
+        add(b+'th',x+fw,wl-2*fw,quad(s0,s0+fw,0,hc)); add(b+'tb',x+fw,wl-2*fw,quad(s1-fw,s1,0,hc));
+        const vid=b+'v'; pc[vid]=PX3(vid,quad(s0+fw,s1-fw,hc/2-2,hc/2+2),x+fw,wl-2*fw,'vit'); pc[vid].sur=[...caisse]; ids.vit.push(vid); }
+      else { const add=(id,x0,w,q)=>{ pc[id]=PX3(id,q,x0,w,'m'); pc[id].sur=caisse; ids.cad.push(id); };
+        add(b+'mg',x,45,quad(s0,s1,0,hc)); add(b+'md',x+wl-45,45,quad(s0,s1,0,hc));
+        add(b+'th',x+45,wl-90,quad(s0,s0+45,0,hc)); add(b+'tb',x+45,wl-90,quad(s1-45,s1,0,hc));
+        if(Ls>900){ const sm=s0+Ls/2-22; add(b+'tm',x+45,wl-90,quad(sm,sm+45,0,hc)); }
+        const vid=b+'v'; pc[vid]=PX3(vid,quad(s0,s1,hc,hc+ep),x,wl,'vit'); pc[vid].sur=[...caisse,...ids.cad]; ids.vit.push(vid); }
+    }
+  });
+  const nCouv=n*nPentes;
+  // ---- Liste de débit ----
+  const sec=`${e} × ${mm(bl)}`;
+  P.push({nom:dbl?'Planche du derrière':'Planche du derrière (côté haut)',q:nAr,L,l:bl,t:'m',sec});
+  P.push({nom:dbl?'Planche du devant':'Planche du devant (côté bas)',q:nBas,L,l:bl,t:'m',sec});
+  rangsCote.forEach(rc=>P.push({nom:`Planche de ${dbl?'pignon':'côté'}, rang ${rc.r+1}${rc.r===0?' (en bas)':''}`,q:2,L:Math.round(rc.L),l:bl,t:'m',sec,
+    note:rc.biais?(dbl?`taillée en pointe à ${deg}°, comme le toit`:`coupée en biais à ${deg}° sur le dessus`):'entre les planches du devant et du derrière'}));
+  P.push({nom:tab?'Pied arrière':'Poteau d’angle arrière',q:2,L:Math.round(hPA),l:sp,t:'m',sec:'45 × 45',note:dbl?'':'haut coupé en biais, à fleur des côtés'});
+  P.push({nom:tab?'Pied avant':'Poteau d’angle avant',q:2,L:Math.round(hPV),l:sp,t:'m',sec:'45 × 45'});
+  if(dbl) P.push({nom:'Poteau de pignon (au milieu)',q:2,L:Math.round(hLi),l:sp,t:'m',sec:'45 × 45',note:'haut taillé en pointe, comme le pignon'},
+    {nom:'Faîtière',q:1,L:Math.round(L-2*e-2*sp),l:70,t:'m',sec:'45 × 70',note:'posée de chant entre les poteaux de pignon ; dessus chanfreiné des deux côtés à la pente'});
+  else P.push({nom:'Tasseau de liaison (intérieur des côtés)',q:2,L:Math.round(hLi),l:45,t:'m',sec:'27 × 45',note:`haut coupé en biais à ${deg}°`});
+  if(tab){ P.push({nom:'Planche de ceinture (devant et derrière)',q:2,L,l:bl,t:'m',sec,note:'à 10 cm du sol'},{nom:'Planche de ceinture (côté)',q:2,L:Lf,l:bl,t:'m',sec});
+    P.push({nom:'Tasseau support du fond',q:2,L:Math.round(Lc),l:40,t:'m',sec:'27 × 40',note:'en bas, contre le devant et le derrière, entre les pieds'});
+    P.push({nom:'Latte du fond',q:ns,L:Math.round(Lf),l:bl,t:'m',sec,note:`écart ${cm(gf)} cm ; les 2 lattes des bouts entaillées de 4,5 × 4,5 cm aux coins`}); }
+  if(!fen){ const nt=Ls>900?3:2;
+    P.push({nom:'Montant de cadre de couvercle',q:2*nCouv,L:Math.round(Ls),l:45,t:'m',sec:'27 × 45',note:'tasseau posé à plat'});
+    P.push({nom:'Traverse de cadre de couvercle',q:nt*nCouv,L:Math.round(wl-90),l:45,t:'m',sec:'27 × 45',note:nt>2?'en haut, en bas et au milieu, entre les montants':'en haut et en bas, entre les montants'}); }
+  // ---- Fournitures ----
+  const nPl=nAr+nBas+2*rangsCote.length+(tab?4:0);
+  addQ(Q,`Vis inox ou zinguées ${visDe(e)} (planches dans les poteaux)`,4*nPl);
+  addQ(Q,'Vis inox ou zinguées 4 × 40 mm (tasseaux, cadres, fond)',(dbl?4:2*(nHaut+1))+(tab?2*(Math.ceil(Lc/250)+1)+2*ns:0)+(fen?0:nCouv*8));
+  if(dbl) addQ(Q,'Vis 6 × 100 mm (faîtière dans les poteaux de pignon)',4);
+  if(fen) Q[`Vieilles fenêtres de ${cm(wl)} × ${cm(Ls)} cm (cadre compris)`]=nCouv;
+  else { const sV=nCouv*wl*Ls/1e6;
+    Q['Polycarbonate alvéolaire 4 ou 6 mm, traité anti-UV']=`${fr(sV,2)} m², soit ${nCouv} plaque${nCouv>1?'s':''} de ${cm(wl)} × ${cm(Ls)} cm`;
+    addQ(Q,'Vis à tôle 4,2 × 25 mm avec rondelles étanches (polycarbonate)',nCouv*(2*Math.ceil(Ls/250)+2*Math.ceil(wl/250)+(Ls>900?Math.ceil(wl/250):0)));
+    addQ(Q,'Équerres plates 40 mm (coins des cadres) et leurs vis',4*nCouv);
+    Q['Adhésif aluminium plein (haut des alvéoles) et adhésif perforé (bas)']=`${fr(nCouv*wl/1000*1.1,1)} m de chaque`; }
+  addQ(Q,'Charnières inox ou galvanisées 60 mm et leurs vis',2*nCouv);
+  addQ(Q,'Béquilles ou compas d’ouverture (ou une cale à crans en chute de tasseau)',nCouv);
+  addQ(Q,'Crochets ou loquets, pour que le vent ne soulève pas les couvercles',nCouv);
+  Q['Joint mousse adhésif sur le haut des côtés (facultatif)']=`${fr((2*L+2*Pd/ca)/1000*1.05,1)} m`;
+  if(tab){ addQ(Q,'Cales sous les pieds (dalles ou briques)',4);
+    Q['Géotextile (feutre) pour le fond, si vous semez en pleine terre dans le coffre']=`${fr(L*Pd/1e6*1.15,2)} m²`; }
+  // ---- Informations ----
+  const Li=L-2*e, Pi=Pd-2*e, surf=Li*Pi/1e6, god=Math.floor(Li/80)*Math.floor(Pi/80);
+  info.push(`Encombrement : ${cm(L)} × ${cm(dbl?Pd:Pd+ov)} cm, ${cm(YH)} cm de haut`,
+    dbl?`Côtés : ${cm(hB)} cm, faîtage : ${cm(hH)} cm (${nBas} et ${nHaut} rangées de planches)`:`Hauteur derrière : ${cm(hH)} cm, devant : ${cm(hB)} cm (${nHaut} et ${nBas} rangées de planches)`,
+    `Pente des couvercles : ${deg}°`,
+    `${nCouv} couvercle${nCouv>1?'s':''} de ${cm(wl)} × ${cm(Ls)} cm${dbl?` (${n} de chaque côté)`:''}`,
+    `Surface abritée : ${fr(surf,2)} m², soit la place d’environ ${god} godets de 8 × 8 cm`,...barres(P));
+  if(tab) info.push(`Hauteur de travail (dessus du fond) : ${cm(yb+40+e)} cm`);
+  if(deg<10) warns.push(`La pente est faible (${deg}°) : la pluie et la condensation s’écoulent mal et l’eau stagne sur le couvercle. Visez 15 à 30° : ${dbl?'remontez le faîtage':'remontez l’arrière'} ou réduisez la profondeur.`);
+  if(deg>40) warns.push(`La pente est forte (${deg}°) : le couvercle prend le vent et le châssis devient haut. 15 à 30° suffisent.`);
+  if(!fen&&L>2400) warns.push('Au-delà de 2,40 m, faites plutôt deux châssis : ils seront plus faciles à déplacer.');
+  if(tab&&Pd>700) warns.push(`À ${cm(Pd)} cm de profondeur, le fond du coffre sera difficile à atteindre depuis le devant. 60 cm, c’est plus confortable.`);
+  if(tab&&L>1200) warns.push('Au-delà de 1,20 m de long, ajoutez une paire de pieds au milieu : rempli de godets mouillés, le fond est lourd.');
+  if(fen) warns.push('Vérifiez les vieilles fenêtres : vitres fêlées remplacées, mastic refait. Les peintures anciennes peuvent contenir du plomb : ne les poncez pas, repeignez par-dessus. S’il y a des enfants, préférez le polycarbonate, qui ne casse pas.');
+  // ---- Conseils ----
+  notes.push(dbl?'Orientez le faîtage nord-sud : les deux pentes reçoivent alors le soleil, l’une le matin, l’autre l’après-midi.'
+      :'Posez le châssis face au sud, le côté haut au nord, dans un coin abrité du vent et sans ombre l’hiver (contre un mur clair, c’est encore mieux).',
+    'Aérez ! Dès que le soleil donne, la température monte très vite sous le couvercle (plus de 30 °C en mars). Entrouvrez avec la béquille le matin, refermez en fin d’après-midi pour garder la chaleur la nuit.',
+    'Par nuit de gel, couvrez le châssis d’un voile d’hivernage, d’une vieille couverture ou de cartons.',
+    'Utilisation : semis précoces dès février (salades, radis, choux, poireaux, tomates en godets), endurcissement des plants 1 à 2 semaines avant de les planter dehors, boutures à l’automne.',
+    v.bois==='pin'?'Pin traité autoclave : bien pour le contact avec la terre. Si vous semez en pleine terre dans le coffre, agrafez un film à l’intérieur des côtés.'
+      :v.bois==='robinier'?'Robinier : le plus durable, sans traitement. Faites toujours un avant-trou avant de visser.':'Douglas ou mélèze : sans traitement, mais posez le bas sur une rangée de briques ou de dalles pour qu’il ne touche pas la terre humide.');
+  if(!fen) notes.push('Polycarbonate : alvéoles dans le sens de la pente, face imprimée « anti-UV » vers le ciel. Fermez le haut des alvéoles avec l’adhésif aluminium et le bas avec l’adhésif perforé : la condensation s’écoule sans que la poussière entre.',
+    'Percez les trous du polycarbonate 2 mm plus gros que les vis et ne serrez pas à fond : la plaque se dilate au soleil.');
+  if(mod==='sol') notes.push('Astuce d’autrefois, la couche chaude : creusez 30 à 40 cm sous le châssis, remplissez de fumier de cheval frais bien tassé, puis 15 à 20 cm de terreau. Le fumier chauffe en se décomposant : les semis lèvent même en février. Attendez 8 jours que la grosse chaleur retombe avant de semer.');
+  if(tab) notes.push('Sur le fond à claire-voie, posez directement godets, terrines ou plaques de semis. Pour semer en pleine terre, mettez le géotextile sur les lattes et 10 à 15 cm de terreau.');
+  // ---- Étapes de montage ----
+  st.push({t:dbl?'Les pignons':'Les côtés',x:dbl?`Assemblez chaque pignon à plat : les planches sur un poteau d’angle à chaque bout et sur le poteau du milieu, 2 vis ${visDe(e)} par planche et par poteau. Taillez le haut en pointe à ${deg}° en suivant un cordeau tendu du coin au sommet.`
+      :`Assemblez chaque côté à plat : les planches sur le poteau arrière${tab?' (le pied)':''} et le poteau avant, 2 vis ${visDe(e)} à chaque bout. Vissez le tasseau de liaison à l’intérieur, à ${cm(zc)} cm de l’arrière : il tient les planches du haut. Tracez la pente du poteau arrière au poteau avant et sciez le tout d’un coup.`,
+    add:[...ids.pi,...ids.co,...ids.li],vis:[]});
+  st.push({t:'Devant et derrière',x:`Relevez les deux ${dbl?'pignons':'côtés'} et vissez les planches du derrière, puis celles du devant, sur les poteaux : 2 vis à chaque bout. Vérifiez l’équerrage : les deux diagonales doivent être égales.${dbl?'':' Rabotez l’arête intérieure du haut du derrière à la pente pour que le couvercle porte bien.'}`,add:[...ids.ar,...ids.av],vis:[]});
+  if(dbl) st.push({t:'Faîtière',x:'Posez la faîtière de chant entre les deux poteaux de pignon, le dessus à fleur des pointes. Vissez-la à travers chaque poteau avec 2 vis 6 × 100 mm. Chanfreinez le dessus des deux côtés, à la pente.',add:ids.fa,vis:[]});
+  if(tab) st.push({t:'Ceinture et fond',x:`Vissez la ceinture de planches sur les pieds à 10 cm du sol : elle rend le tout rigide. Vissez les 2 tasseaux à l’intérieur, en bas du devant et du derrière, puis les lattes du fond par-dessus, avec ${cm(gf)} cm d’écart. (Sur le dessin, le devant est retiré pour montrer l’intérieur.)`,
+    add:[...ids.ce,...ids.ta,...ids.fd],vis:[],cache:ids.av});
+  st.push({t:fen?'Les fenêtres':'Les cadres des couvercles',x:fen?`Démontez les poignées et la quincaillerie qui dépassent. Si une fenêtre a un jet d’eau (le petit rebord du bas), placez-le vers le bas de la pente.`
+      :`Pour chaque couvercle, assemblez à plat 2 montants et ${Ls>900?3:2} traverses en tasseau 27 × 45 : une vis 4 × 40 à chaque jonction et une équerre plate dans chaque coin. Posez le polycarbonate dessus, à fleur des bords, et vissez-le tous les 25 cm avec les rondelles étanches.`,
+    add:[...ids.cad,...ids.vit],vis:[]});
+  st.push({t:'Pose des couvercles',x:dbl?'Posez les couvercles de chaque côté, le haut contre la faîtière. Vissez 2 charnières par couvercle sur le dessus, à cheval sur la faîtière : chaque côté s’ouvre indépendamment. Ajoutez une béquille et un crochet contre le vent pour chaque couvercle.'
+      :'Posez les couvercles sur le coffre, à fleur du derrière, en laissant 4 mm entre eux. Vissez 2 charnières par couvercle sur le derrière. Ajoutez une béquille ou une cale à crans (ouverture à 5, 15 et 30 cm) et un crochet contre le vent pour chaque couvercle.',add:[],vis:[]});
+  const titre=dbl?'Châssis à deux pentes':tab?'Châssis sur pieds':'Châssis à semis';
+  const out=meuble({...v,e,mat:'ext'},{m3d:{pc,st,cotes:{W:L,H:Math.round(YH+hc),D:dbl?Pd:Pd+ov}},titre,pieces:P,q:Q,notes,warns,info,ep:-1,
+    vue:vueAuto(Object.values(pc),'x',{titre:titre+' vu de côté'})});
+  return {...out,big:`${titre} · ${nCouv} couvercle${nCouv>1?'s':''} · ${fr(surf,2)} m² à l’abri`};
+}
 
 /* ============ JARDIN : POULAILLER ============ */
 /* Trois modèles :
