@@ -335,6 +335,32 @@ i.k-te{background:repeating-linear-gradient(90deg,var(--c-te) 0 7px,var(--c-te2)
 .mv .mv-met{fill:#bfc5cc;stroke:#6b737c;stroke-width:1.2;vector-effect:non-scaling-stroke}
 .mv .mv-b{fill:#6b1f2a;fill-opacity:.85;stroke:#3d0f16;stroke-width:1;vector-effect:non-scaling-stroke}
 
+/* Façons d'assembler */
+.ass{display:flex;flex-direction:column;gap:14px;border-top:1px solid var(--line);padding-top:14px}
+.ass h3{font-family:var(--display);font-weight:800;font-size:1.35rem;margin:0}
+.ass>p,.ass-d{margin:0}
+.ass-d{font-size:.93rem;color:var(--muted);margin-bottom:8px}
+.ass-t{display:block;font-size:1.05rem;margin-bottom:8px}
+.ass-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+.ass-m{border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;background:var(--sch-bg);min-width:0}
+.ass-m.on{border:2px solid var(--accent);padding:9px 11px}
+.ass-m p{margin:0;font-size:.93rem}
+.ass-m ul{margin:0;padding-left:20px;font-size:.93rem}
+.ass-m li+li{margin-top:4px}
+.ass-m .u{color:var(--muted);font-size:.88rem}
+.ass-h{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 8px}
+.ass-niv{color:var(--muted);font-size:.85rem}
+.ass-tag{font-size:.78rem;font-weight:700;background:var(--accent);color:var(--surface);border-radius:999px;padding:2px 9px}
+.as-svg{width:100%;height:110px;display:block}
+.as-svg .a1{fill:var(--panel);stroke:var(--ink);stroke-width:1.3}
+.as-svg .a2{fill:var(--piece);stroke:var(--piece-line);stroke-width:1.3}
+.as-svg .al{fill:none;stroke:var(--ink);stroke-width:1.6;stroke-linecap:round}
+.as-svg .ad{fill:none;stroke:var(--ink);stroke-width:1.1;stroke-dasharray:3 2}
+.as-svg .ak{fill:var(--warn);stroke:none}
+.as-svg .ah{fill:var(--sch-bg);stroke:var(--piece-line);stroke-width:.8}
+.as-svg .aa{fill:none;stroke:var(--accent);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.as-svg .at{stroke:var(--piece-line);stroke-width:7;stroke-linejoin:miter}
+.as-svg text{font:700 9px var(--body);fill:var(--muted)}
 
 .phases{display:flex;flex-direction:column;gap:6px;margin:8px 0}
 .phases div{display:grid;grid-template-columns:2.2em minmax(0,1fr) 4em;align-items:center;gap:8px;font-variant-numeric:tabular-nums}
@@ -1718,7 +1744,7 @@ const FAMILLES = [
   {id:'maconnerie', nom:'Maçonnerie', desc:'Béton, fondations, parpaings', outils:['beton','fondations','mortier','crepi','parpaings','pente']},
   {id:'menuiserie', nom:'Menuiserie', desc:'Étagères, meubles, coffres, tables, finitions',  outils:[{g:'Étagères',outils:['m-etagere','m-murale','m-echelle','m-angle','m-angle-mont','m-angle-ech']},{g:'Meubles',outils:['m-biblio','m-bas','m-placard']},{g:'Coffres',outils:['m-coffre','m-coffre-banc','m-malle']},{g:'Casiers',outils:['m-casier','m-bouteilles']},{g:'Tables et tabourets',outils:['m-tbasse','m-tsalon','m-sellette','m-tabouret']},'m-etabli','finitions']},
   {id:'jardin',     nom:'Jardin',     desc:'Nichoir, abri à insectes, table, compost, châssis à semis, poulaillers, balançoires', outils:[{g:'Oiseaux et insectes',outils:['j-nichoir','j-mangeoire','j-insectes']},{g:'Jardinières',outils:['j-jardiniere','j-echelle','j-gradins']},'j-chassis','j-terrasse','j-pique','j-compost','j-poulailler','j-balancoire']},
-  {id:'objets',     nom:'Petits objets', desc:'Plateau tournant, boîtes, porte-clés, porte-pinceaux', outils:[{g:'Cuisine',outils:['o-plateau','o-planche']},{g:'Boîtes',outils:['o-bijoux','o-tiroir','o-caisse']},{g:'Au mur',outils:['o-cles','o-jmurale']},'o-pinceaux']},
+  {id:'objets',     nom:'Petits objets', desc:'Plateau tournant, boîtes, organiseurs de bureau, support de téléphone, porte-clés, porte-pinceaux', outils:[{g:'Cuisine',outils:['o-plateau','o-planche']},{g:'Boîtes',outils:['o-bijoux','o-tiroir','o-caisse']},{g:'Bureau',outils:['o-bureau-tel','o-bureau-pots','o-tel']},{g:'Au mur',outils:['o-cles','o-maison','o-jmurale']},'o-pinceaux']},
   {id:'isolation',  nom:'Isolation',  desc:'Isolants, épaisseurs', outils:['isolants','epaisseurs','isol-qte']},
   {id:'plomberie',  nom:'Plomberie',  desc:'Tuyaux, équipements, évacuations', outils:[{g:'Alimentation',outils:['tuyaux','assemblages','equipements']},'evacuations']},
   {id:'chauffage',  nom:'Chauffage et ventilation', desc:'Puissance, appareils, VMC', outils:['ch-puissance','ch-appareils','ventilation']},
@@ -4673,6 +4699,385 @@ function opRatelier(v){
     vue:vueAuto(Object.values(pc).filter(p=>!ids.go.includes(p.id)&&!ids.pi.includes(p.id)),'x',{titre:'Vue de côté',sauf:[...ids.tr,...ids.te]})});
   return {...out,big:`Râtelier à pinceaux · ${nt} trous${v.godet?', avec son petit bac':''}`};
 }
+
+
+/* ============ PETITS OBJETS : BUREAU, PORTE-CLÉS MAISON, SUPPORT DE TÉLÉPHONE ============ */
+TEINTE.tel=[215,12,18]; TEINTE.note=[48,88,70]; TEINTE.boul=[38,42,80]; TEINTE.noy=[24,38,36]; TEINTE.peup=[46,30,82]; TEINTE.bambou=[38,48,70];
+/* Petits dessins d'assemblage, vus en coupe (120 × 80) */
+const ASV=b=>`<svg class="as-svg" viewBox="0 0 120 80" role="img" aria-hidden="true">${b}</svg>`;
+const ASJ={
+  bout:{n:'Bout à bout, collé et cloué',niv:1,svg:'<rect class="a1" x="20" y="10" width="16" height="60"/><rect class="a2" x="36" y="54" width="74" height="16"/><path class="al" d="M19 58V66M19 62H58"/>',
+    x:'Le bout d’une pièce vient contre la face de l’autre. Encollez le chant, serrez, puis plantez 2 ou 3 pointes sans tête (1,2 × 20 mm dans du 8 mm) ou de petites vis avec avant-trou. Chassez les têtes et rebouchez à la pâte à bois.',
+    p:'+ rapide, sans outil spécial · – on voit le chant du contreplaqué et les petits trous'},
+  feuil:{n:'À feuillure',niv:2,svg:'<path class="a1" d="M20 10H36V54H28V70H20Z"/><rect class="a2" x="28" y="54" width="82" height="16"/>',
+    x:'Au bout de la pièce qui reste devant, creusez une feuillure (une marche) de la moitié de l’épaisseur, large comme l’épaisseur : à la défonceuse, à la scie sur table en deux passes, ou à la scie à dos et au ciseau. L’autre pièce s’y loge ; collez et serrez.',
+    p:'+ deux fois plus de surface de collage, l’angle se met d’équerre tout seul · – réglage précis de la machine'},
+  onglet:{n:'En onglet à 45°, avec clés',niv:3,svg:'<path class="a1" d="M20 10H36V54L20 70Z"/><path class="a2" d="M20 70L36 54H110V70Z"/><path class="ak" d="M20 59L31 70H20Z"/>',
+    x:'Chaque pièce est coupée à 45° à ses deux bouts (scie à onglet, ou scie sur table lame inclinée) : aucun chant ne se voit. Collez en serrant avec du ruban de masquage tendu. Après séchage, sciez deux traits en travers de chaque angle et collez-y des clés en placage ou en bois contrasté, arasées ensuite.',
+    p:'+ le plus joli, les clés rendent l’angle solide · – coupes très justes, sinon il reste des jours'},
+  ent:{n:'À entures (créneaux)',niv:3,svg:'<path class="a1" d="M10 10H62V22H50V34H62V46H50V58H62V70H10Z"/><path class="a2" d="M110 10H62V22H50V34H62V46H50V58H62V70H110Z"/>',
+    x:'Les bouts des deux pièces sont découpés en créneaux qui s’emboîtent (largeur d’un créneau : 1 à 1,5 fois l’épaisseur). À la scie sur table avec un petit gabarit à taquet, ou à la scie à dos et au ciseau à bois. Encollez les créneaux et emboîtez au maillet.',
+    p:'+ très solide et décoratif · – long à tracer et à ajuster à la main'},
+  tour:{n:'Tourillons et colle',niv:2,svg:'<rect class="a1" x="20" y="10" width="16" height="60"/><rect class="a2" x="36" y="54" width="74" height="16"/><rect class="ad" x="25" y="59" width="26" height="6" rx="2"/>',
+    x:'Des chevilles de bois cannelées dans des trous en face l’un de l’autre. Diamètre : un tiers de l’épaisseur (Ø 6 mm pour 18 mm, Ø 4 mm pour 12 mm). Percez avec un gabarit à tourillons ou des pointes de centrage ; profondeur : la moitié du tourillon plus 1 mm.',
+    p:'+ invisible et solide · – impossible dans du 8 ou 10 mm : parois de 12 mm au moins'},
+  rain:{n:'En rainure',niv:2,svg:'<path class="a1" d="M8 54H52V60H68V54H112V70H8Z"/><rect class="a2" x="52" y="10" width="16" height="50"/>',
+    x:'La pièce qui reçoit est creusée d’une rainure large comme la cloison et profonde d’un tiers de son épaisseur (défonceuse avec fraise droite, ou deux traits de scie et le ciseau). La cloison s’y glisse avec un peu de colle.',
+    p:'+ la cloison est tenue sur toute sa longueur, bien droite · – les rainures se font avant d’assembler'},
+  vis:{n:'Collé et vissé par-dessous',niv:1,svg:'<rect class="a1" x="8" y="54" width="104" height="16"/><rect class="a2" x="40" y="12" width="14" height="42"/><path class="al" d="M47 70V34M43 70L47 65L51 70"/>',
+    x:'Posez l’ensemble sur le socle, tracez son contour, percez le socle (Ø 3 mm) au milieu de la trace des parois, fraisez par-dessous et vissez (vis 3 × 16 mm) avec un filet de colle.',
+    p:'+ très simple, rien ne se voit dessus · – percez bien au milieu des parois minces'},
+  tourS:{n:'Tourillons dans le socle',niv:2,svg:'<rect class="a1" x="8" y="54" width="104" height="16"/><rect class="a2" x="40" y="12" width="14" height="42"/><rect class="ad" x="44" y="38" width="6" height="26" rx="2"/>',
+    x:'Percez des trous de Ø 4 mm (parois de 8 à 10 mm) ou Ø 6 mm (12 mm et plus) dans le chant du bas des parois, reportez-les sur le socle avec des pointes de centrage, percez et collez.',
+    p:'+ invisible, même dessous · – perçage précis dans un chant étroit'},
+  encas:{n:'Encastré dans une rainure du socle',niv:2,svg:'<path class="a1" d="M8 54H40V60H54V54H112V70H8Z"/><rect class="a2" x="40" y="12" width="14" height="48"/>',
+    x:'Défoncez dans le socle, sur 3 mm de profondeur, la trace de toutes les parois (fraise droite de la largeur des parois, guidée par une règle ou un gabarit). Les parois s’y posent et s’y collent.',
+    p:'+ tout se place tout seul, très propre · – défonceuse et socle de 12 mm au moins'},
+  aim:{n:'Aimants, démontable',niv:1,svg:'<rect class="a1" x="8" y="54" width="104" height="16"/><rect class="a2" x="40" y="10" width="14" height="40"/><rect class="ak" x="42" y="45" width="10" height="5"/><rect class="ak" x="42" y="54" width="10" height="5"/>',
+    x:'Collez de petites cales de 15 × 15 mm dans les angles intérieurs, au ras du bas. Percez dessous et en face, dans le socle, des logements de Ø 6 × 3 mm et collez-y des aimants néodyme à l’époxy, pôles opposés face à face.',
+    p:'+ on soulève l’organiseur pour nettoyer · – l’ensemble doit déjà être solide sans le socle'},
+  platine:{n:'Crochets sur platine, vissés',niv:1,svg:'<rect class="a2" x="10" y="8" width="14" height="64"/><rect class="ak" x="24" y="16" width="4" height="34"/><path class="ad" d="M13 24H24M13 42H24"/><path class="al" d="M28 46H34Q46 46 46 58Q46 68 38 66"/>',
+    x:'Chaque crochet a une petite plaque percée. Tracez un trait au crayon pour les aligner, présentez, pointez les trous, avant-trou de 2 mm et vissez avec les vis livrées (souvent 3 × 12 mm).',
+    p:'+ très solide, aspect ancien comme sur la photo · – vis courtes : planche de 12 mm au moins'},
+  crochet:{n:'Crochets à visser',niv:1,svg:'<rect class="a2" x="10" y="8" width="14" height="64"/><path class="ad" d="M12 46H24"/><path class="al" d="M24 46H34Q46 46 46 36Q46 28 39 29"/>',
+    x:'Un crochet à tige filetée se visse directement dans la face : avant-trou de 2 mm, puis tournez à la main (une tige de tournevis passée dans le crochet aide à forcer).',
+    p:'+ le plus rapide · – dans du bois mince il finit par tourner : 15 mm au moins, ou une goutte d’époxy'},
+  pat:{n:'Patères en bois (tourillons)',niv:2,svg:'<rect class="a2" x="10" y="8" width="14" height="64"/><rect class="a1" x="14" y="36" width="44" height="9" rx="4" transform="rotate(-10 24 40)"/>',
+    x:'Percez des trous de Ø 10 mm, inclinés de 10° vers le haut, sur les deux tiers de l’épaisseur sans traverser, et collez-y des bouts de tourillon de 45 mm aux bouts arrondis.',
+    p:'+ tout en bois, rien à acheter · – il faut 15 mm d’épaisseur au moins'},
+  serrure:{n:'Trous de serrure au dos',niv:2,svg:'<rect class="a2" x="10" y="8" width="100" height="64"/><rect class="a1" x="56" y="24" width="8" height="24" rx="4"/><circle class="a1" cx="60" cy="48" r="7"/><circle class="al" cx="60" cy="30" r="2.5"/><text x="14" y="18">dos</text>',
+    x:'Au dos, deux trous en forme de serrure : à la défonceuse avec une fraise spéciale, ou à la main avec un trou de Ø 10 mm sur 7 mm de profondeur prolongé vers le haut par une fente de 5 mm sur 15 mm. La tête de la vis du mur entre dans le trou et glisse dans la fente.',
+    p:'+ invisible, bien plaqué au mur · – mesurez l’écart exact entre les deux trous avant de percer le mur'},
+  pattes:{n:'Pattes à suspendre',niv:1,svg:'<path class="al" d="M10 4V76"/><rect class="a2" x="24" y="22" width="14" height="54"/><rect class="ak" x="20" y="8" width="4" height="28"/><path class="al" d="M10 14H24"/>',
+    x:'Deux petites pattes métalliques vissées au dos, en haut, qui dépassent un peu. Elles s’accrochent sur deux vis ou deux clous plantés dans le mur.',
+    p:'+ le plus simple · – la maison peut se soulever quand on tire une clé'},
+  cleat:{n:'Tasseau biseauté',niv:2,svg:'<path class="al" d="M10 4V76"/><path class="a1" d="M10 42L28 24V60H10Z"/><path class="a2" d="M28 6V20L10 38V6Z"/><rect class="a2" x="28" y="2" width="14" height="74"/>',
+    x:'Un tasseau scié en deux dans la longueur, lame inclinée à 45°. Une moitié est vissée au mur, biseau vers le haut et vers le mur ; l’autre est collée au dos, biseau vers le bas. On accroche en emboîtant les biseaux.',
+    p:'+ très solide, facile à mettre de niveau · – éloigne la maison du mur de l’épaisseur du tasseau'},
+  plaq:{n:'Collé à plat',niv:1,svg:'<rect class="a2" x="10" y="44" width="100" height="16"/><rect class="a1" x="30" y="30" width="60" height="14"/><path class="aa" d="M60 6V24M55 19l5 5 5-5M60 74V64"/>',
+    x:'Encollez le dos du toit en couche fine, posez-le et serrez entre deux cales avec des serre-joints (ou sous des livres lourds) pendant 1 heure. Deux pointes coupées à ras font des « tétons » qui l’empêchent de glisser au serrage.',
+    p:'+ grande surface collée : très solide · – la pièce glisse si on ne la bloque pas'},
+  visdos:{n:'Vissé par l’arrière',niv:1,svg:'<rect class="a2" x="10" y="44" width="100" height="16"/><rect class="a1" x="30" y="30" width="60" height="14"/><path class="al" d="M60 60V34M56 60L60 56L64 60"/>',
+    x:'Percez la maison (Ø 3 mm, fraisé au dos) et vissez le toit par l’arrière, avec de la colle. Les vis doivent faire 3 mm de moins que les deux épaisseurs réunies.',
+    p:'+ rien ne se voit devant · – vis trop longue = pointe qui ressort'},
+  tourF:{n:'Tourillons de positionnement',niv:2,svg:'<rect class="a2" x="10" y="44" width="100" height="16"/><rect class="a1" x="30" y="30" width="60" height="14"/><rect class="ad" x="42" y="34" width="6" height="20" rx="2"/><rect class="ad" x="72" y="34" width="6" height="20" rx="2"/>',
+    x:'Deux tourillons de Ø 6 mm, percés dans les deux pièces avec des pointes de centrage, placent le toit pile au bon endroit pendant le collage.',
+    p:'+ ne glisse pas · – perçages à ne pas faire traverser'},
+  plis:{n:'Feuilles minces collées sur un moule',niv:3,svg:'<path class="a1" d="M14 74V52Q14 34 34 34H108V74Z"/><path class="al" d="M11 74V52Q11 31 34 31H108M8 74V52Q8 28 34 28H108M5 74V52Q5 25 34 25H108"/><path class="aa" d="M60 4V18M55 13l5 5 5-5"/>',
+    x:'La méthode du support de la photo (on voit les couches sur la tranche). On colle 5 à 8 feuilles de 1 mm les unes sur les autres et on les serre entre un moule et un contre-moule pendant le séchage : en sortant, la pièce garde la forme.',
+    p:'+ courbe régulière, fine et très solide, belle tranche rayée · – il faut fabriquer le moule et une colle à prise lente'},
+  kerf:{n:'Traits de scie',niv:2,svg:'<path class="a2" d="M8 26H112V40H8Z"/><path class="ah" d="M42 40V29h2.5V40ZM50 40V29h2.5V40ZM58 40V29h2.5V40ZM66 40V29h2.5V40ZM74 40V29h2.5V40Z"/><path class="aa" d="M14 48V62M10 58l4 4 4-4M106 48V62M102 58l4 4 4-4"/>',
+    x:'Dans un contreplaqué de 9 à 12 mm, on scie des traits parallèles côté intérieur de chaque courbe, en laissant 1,5 à 2 mm de bois. La planche plie à cet endroit ; on remplit les traits de colle et on la tient en forme pendant le séchage.',
+    p:'+ une seule planche, pas de moule complet · – les traits se voient, rayons assez grands'},
+  droit:{n:'Pièces droites collées en angle',niv:1,svg:'<path d="M12 50V64H66L84 20L100 66" fill="none" class="at"/><circle class="ak" cx="66" cy="64" r="3"/><circle class="ak" cx="84" cy="20" r="3"/><circle class="ak" cx="12" cy="64" r="3"/>',
+    x:'Quatre morceaux droits — rebord, fond, dossier incliné et pied — coupés d’onglet et collés. Les angles sont vifs ; on peut les arrondir à la ponceuse.',
+    p:'+ facile, outillage simple · – moins élégant, onglets à couper juste'},
+  bloc:{n:'Découpé dans un bloc collé',niv:2,svg:'<rect class="a1" x="8" y="14" width="80" height="58"/><path class="ad" d="M14 66H50Q58 66 60 58L68 28Q71 20 75 28L82 66" style="stroke-width:2"/><rect class="a2" x="96" y="14" width="16" height="58"/><path class="al" d="M99 14V72M102 14V72M105 14V72M108 14V72" style="stroke-width:.8"/>',
+    x:'On colle à plat plusieurs plaques de contreplaqué pour faire un bloc aussi épais que la largeur du support, on trace le profil sur le côté et on le découpe d’un seul coup à la scie à ruban ou à chantourner.',
+    p:'+ aucune courbe à forcer, côtés rayés · – lourd, beaucoup de chutes, lame longue nécessaire'},
+};
+const NIV_A=['','facile','moyen','difficile'];
+/* grp : [{t, m:[clés], ch:clé choisie, d:texte}] */
+function assHTML(titre,intro,grp){
+  return `<div class="ass"><h3>${titre}</h3>${intro?`<p>${intro}</p>`:''}${grp.map(g=>`<div class="ass-j"><b class="ass-t">${g.t}</b>${g.d?`<p class="ass-d">${g.d}</p>`:''}<div class="ass-grid">${g.m.map(k=>{ const j=ASJ[k];
+    return `<div class="ass-m${k===g.ch?' on':''}">${ASV(j.svg)}<div class="ass-h"><b>${j.n}</b><span class="ass-niv">${NIV_A[j.niv]}</span>${k===g.ch?'<span class="ass-tag">votre choix</span>':''}</div><p>${j.x}</p><p class="u">${j.p}</p></div>`; }).join('')}</div></div>`).join('')}</div>`; }
+const avantNotice=(x,h)=>x.includes('<div class="notice">')?x.replace('<div class="notice">',h+'<div class="notice">'):x+h;
+
+/* Champs communs aux organiseurs */
+const ANG_O=S('as','Assemblage des angles des pots',[['bout','Collé et cloué (le plus simple)'],['feuil','À feuillures'],['onglet','En onglet à 45°, avec clés'],['ent','À entures (créneaux)'],['tour','Tourillons et colle (parois de 12 mm et plus)']],'bout');
+const FIX_O=S('fx','Fixation sur le socle',[['vis','Collé et vissé par-dessous'],['tourS','Tourillons'],['encas','Encastré dans une rainure du socle'],['aim','Aimants (démontable)']],'vis');
+/* Un pot carré de 4 parois posé sur le socle */
+function potO(pc,P,ids,pre,nom,x0,y0,w,D,H,e,as){
+  const f=pre+'f', d=pre+'d', g=pre+'g', r=pre+'r';
+  pc[d]=B3(d,x0,y0,0,w,H,e,'p'); pc[f]=B3(f,x0,y0,D-e,w,H,e,'p'); pc[g]=B3(g,x0,y0,e,e,H,D-2*e,'p'); pc[r]=B3(r,x0+w-e,y0,e,e,H,D-2*e,'p');
+  ids.push(d,f,g,r);
+  const lc=as==='onglet'||as==='ent'?D:as==='feuil'?D-e:D-2*e;
+  const nf={bout:'',tour:'',feuil:`feuillure de ${fr(e/2,1)} × ${e} mm à chaque bout`,onglet:'coupées à 45° aux deux bouts',ent:'créneaux aux deux bouts'}[as];
+  const nc={bout:'entre la face et le dos',tour:'entre la face et le dos',feuil:'logés dans les feuillures',onglet:'coupés à 45° aux deux bouts',ent:'créneaux aux deux bouts'}[as];
+  P.push({nom:`${nom} : face et dos`,q:2,L:w,l:H,e,t:'p',note:nf},{nom:`${nom} : côtés`,q:2,L:lc,l:H,e,t:'p',note:nc});
+  return w; }
+const angTxt=(as,e)=>({bout:'Encollez les bouts des côtés, placez-les entre la face et le dos, serrez (serre-joints ou ruban de masquage), vérifiez l’équerre, puis plantez 2 pointes sans tête par angle, à travers la face et le dos.',
+  feuil:`Creusez les feuillures (${fr(e/2,1)} mm de profondeur, ${e} mm de large) aux deux bouts de la face et du dos. Encollez, emboîtez les côtés et serrez.`,
+  onglet:'Coupez les 4 pièces à 45° aux deux bouts. Posez-les à plat, bout à bout, face dessous, sur un ruban de masquage ; encollez les onglets, refermez en « rouleau » et serrez avec le ruban. Après séchage, sciez 2 traits en travers de chaque angle et collez-y des clés.',
+  ent:`Tracez les créneaux (${fr(Math.round(e*1.2),0)} mm de large, ${e} mm de profondeur) aux bouts des 4 pièces, sciez, ajustez au ciseau, encollez et emboîtez au maillet.`,
+  tour:`Percez 2 trous de tourillons par angle (Ø ${e>=15?6:4} mm) avec un gabarit, encollez et assemblez.`})[as];
+const socTxt=(fx,e)=>({vis:'Posez l’ensemble sur le socle (même débord tout autour), tracez son contour au crayon, retirez-le. Percez le socle de Ø 3 mm au milieu des traces, fraisez par-dessous. Remettez avec un filet de colle et vissez par-dessous.',
+  tourS:`Percez 2 trous de Ø ${e>=12?6:4} mm dans le chant du bas de chaque paroi, reportez-les sur le socle avec des pointes de centrage, percez, encollez et assemblez.`,
+  encas:`Tracez les parois sur le socle et défoncez une rainure de ${e} mm de large et 3 mm de profondeur sur tout le tracé. Encollez et posez l’ensemble dans les rainures.`,
+  aim:'Collez une cale de 15 × 15 mm dans 4 angles intérieurs, au ras du bas. Percez un logement d’aimant (Ø 6 × 3 mm) sous chaque cale et en face dans le socle, collez les aimants à l’époxy, pôles opposés face à face.'})[fx];
+function qAss(Q,as,fx,e,nAng,nPar){
+  addQ(Q,'Colle à bois vinylique (flacon)',1);
+  addQ(Q,'Pointes sans tête 1,2 × 20 mm',as==='bout'?nAng*2+nPar*2:nPar*2);
+  if(as==='tour') addQ(Q,`Tourillons Ø ${e>=15?6:4} mm`,nAng*2);
+  if(as==='onglet') Q['Clés : bandes de placage ou chutes de 1,5 à 2 mm']=`${nAng*2} petites`;
+  if(as!=='bout'&&as!=='tour') Q['Ruban de masquage (serrage au collage)']='1 rouleau';
+  if(fx==='vis') addQ(Q,'Vis à bois 3 × 16 mm (sous le socle)',nPar*2);
+  if(fx==='tourS') addQ(Q,`Tourillons Ø ${e>=12?6:4} mm (socle)`,nPar*2);
+  if(fx==='aim'){ addQ(Q,'Aimants néodyme Ø 6 × 3 mm',8); Q['Colle époxy']='1 petit tube'; }
+  if(fx==='encas') Q['Défonceuse avec fraise droite']=`Ø ${e} mm`;
+  Q['Patins en feutre ou liège sous le socle']=4; }
+function warnAss(W,as,fx,e,es){
+  if(as==='tour'&&e<12) W.push('Tourillons : il faut des parois de 12 mm au moins. En 8 ou 10 mm, choisissez « collé et cloué » ou « à feuillures ».');
+  if(fx==='encas'&&es<12) W.push('Rainures dans le socle : prenez un socle de 12 mm au moins.');
+  if(fx==='tourS'&&e<8) W.push('Tourillons dans le socle : parois de 8 mm au moins (tourillons de Ø 4 mm).'); }
+const pieceArea=P=>P.filter(p=>p.t==='p').reduce((s,p)=>s+2*p.q*p.L*p.l,0)/1e6;
+/* Quelques crayons dans un pot (pour l'illustration) */
+function crayons(pc,ids,x0,w,D,y0,H,e){ const c=['pmanche','tel','ppoil','pvir'], k=Math.max(2,Math.min(5,Math.floor((w-2*e)/14)));
+  for(let i=0;i<k;i++){ const id='cy'+x0+'_'+i, x=x0+e+4+i*((w-2*e-14)/Math.max(1,k-1)), z=e+6+((i*13)%Math.max(1,D-2*e-20));
+    pc[id]=B3(id,x,y0,z,7,H+35+((i*29)%30),7,c[i%4]); ids.push(id); } }
+
+/* --- Organiseur de bureau avec support de téléphone --- */
+TOOLS['o-bureau-tel']={nom:'Organiseur de bureau avec support de téléphone',aide:'Sur un socle débordant : la place du téléphone à gauche (une fente le tient, il s’appuie contre le dos), deux compartiments en escalier au milieu et un pot à crayons carré à droite. En bambou ou en contreplaqué de 8 mm.',
+  pic:'<path d="M3 40h42v4H3z"/><path d="M31 40V14h11v26M5 40v-6h24v6M17 34v-8h12v8"/><path d="M8 38l5-28 6 1-5 27"/>',
+  champs:[N('L','Longueur','cm',28),N('P','Profondeur','cm',11),N('Hp','Hauteur du pot à crayons','cm',12),N('lp','Largeur du pot à crayons','cm',8),N('lt','Largeur de la place du téléphone','cm',8),
+    N('e','Épaisseur des parois','mm',8),N('es','Épaisseur du socle','mm',12),ANG_O,FIX_O,essO('bambou','bambou','cp','hetre','pin')],
+  calc(v){
+    const e=clamp(v.e,4,20), es=clamp(v.es,6,25), Pm=clamp(v.P*10,70,200), Hp=clamp(v.Hp*10,60,200), lp=clamp(v.lp*10,40,150), lt=clamp(v.lt*10,60,150), m=8, warns=[], notes=[], info=[];
+    let L=clamp(v.L*10,150,500); if(L-lp-lt<60){ L=lt+lp+60; warns.push(`Trop court pour les compartiments : longueur portée à ${cm(L)} cm.`); }
+    const y0=es, hD=Math.round(Hp*0.7), hm=Math.round(Hp*0.55), hf=Math.round(Hp*0.35), hl=22, ws=16, zd=Math.round(Pm*0.45), xm=L-lp, mw=xm-lt-e;
+    const mid=v.as==='bout'?'bout':v.as==='tour'?'tour':'rain', gr=mid==='rain'?2*Math.round(e/3):0;
+    const pc={}, Pl=[], Q={}, st=[], pot=[], dec=[];
+    pc.so=B3('so',-m,0,-m,L+2*m,es,Pm+2*m,'p'); Pl.push({nom:'Socle',q:1,L:L+2*m,l:Pm+2*m,e:es,t:'p',note:`débord de ${cm(m)} cm tout autour, arêtes arrondies`});
+    potO(pc,Pl,pot,'p','Pot à crayons',xm,y0,lp,Pm,Hp,e,v.as);
+    pc.do=B3('do',0,y0,0,xm,hD,e,'p');
+    pc.s1=B3('s1',lt,y0,e,e,hm,zd,'p'); pc.s2=B3('s2',lt,y0,e+zd,e,hf,Pm-e-zd,'p');
+    pc.cm=B3('cm',lt+e,y0,zd,mw,hm,e,'p'); pc.fa=B3('fa',lt+e,y0,Pm-e,mw,hf,e,'p');
+    pc.jg=B3('jg',0,y0,e,e,hl,Pm-2*e,'p'); pc.lv=B3('lv',0,y0,Pm-e,lt,hl,e,'p'); pc.bt=B3('bt',e,y0,Pm-e-ws-e,lt-e,8,e,'p');
+    Pl.push({nom:'Dos',q:1,L:xm,l:hD,e,t:'p',note:'derrière le téléphone et les compartiments'},
+      {nom:'Joue de séparation',q:1,L:Pm-e,l:hm,e,t:'p',note:`en escalier : ${cm(hm)} cm de haut sur ${cm(zd)} cm à l’arrière, ${cm(hf)} cm devant`},
+      {nom:'Cloison du milieu',q:1,L:mw+gr,l:hm,e,t:'p',note:gr?'dans des rainures de la joue et du pot':''},
+      {nom:'Façade basse',q:1,L:mw+gr,l:hf,e,t:'p',note:gr?'dans des rainures de la joue et du pot':''},
+      {nom:'Rebord du téléphone',q:1,L:lt,l:hl,e,t:'p'},{nom:'Butée du téléphone',q:1,L:lt-e,l:8,e,t:'p',note:`à ${cm(ws)} cm derrière le rebord`},
+      {nom:'Petit côté gauche',q:1,L:Pm-2*e,l:hl,e,t:'p'});
+    // Téléphone : appuyé sur la butée et sur le haut du dos
+    const pe=9, Lt=150, wt=Math.min(72,lt+10), K=[Pm-e-ws,y0+8], C=[e,y0+hD]; let u=[C[0]-K[0],C[1]-K[1]]; const nu=Math.hypot(...u); u=u.map(x=>x/nu);
+    const n=[u[1],-u[0]], B=[K[0]-u[0]*(7/u[1]),K[1]-7], R=(p,k,j)=>[p[0]+u[0]*k+n[0]*j,p[1]+u[1]*k+n[1]*j];
+    pc.tel=PX3('tel',[B,R(B,Lt,0),R(B,Lt,pe),R(B,0,pe)],(lt-wt)/2,wt,'tel'); dec.push('tel');
+    crayons(pc,dec,xm,lp,Pm,y0,Hp,e);
+    qAss(Q,v.as,v.fx,e,4,8); finO(Q,v.ess,pieceArea(Pl),false); warnAss(warns,v.as,v.fx,e,es);
+    st.push({t:'Le socle',x:`Coupez le socle, ${v.fx==='encas'?'tracez et défoncez les rainures des parois, ':''}arrondissez ou chanfreinez ses arêtes et poncez-le : c’est la pièce qui se voit le plus.`,add:['so'],vis:[]},
+      {t:'Le pot à crayons',x:angTxt(v.as,e),add:pot,vis:[]},
+      {t:'Le dos et la joue',x:`Collez la joue en escalier contre le dos, à ${cm(lt)} cm du bout gauche, bien d’équerre${mid==='rain'?', dans une rainure du dos':mid==='tour'?', avec 2 tourillons':', puis 2 pointes à travers le dos'}.`,add:['do','s1','s2'],vis:[]},
+      {t:'Les compartiments',x:`Collez la cloison du milieu puis la façade basse entre la joue et le pot${mid==='rain'?', dans leurs rainures':mid==='tour'?', avec 2 tourillons à chaque bout':', avec 2 pointes sans tête à chaque bout'}. Collez le pot contre le bout du dos.`,add:['cm','fa'],vis:[]},
+      {t:'La place du téléphone',x:`Collez le petit côté gauche, le rebord avant, puis la butée à ${cm(ws)} cm derrière le rebord : le bas du téléphone se loge entre les deux et son dos s’appuie sur le haut du dos.`,add:['jg','lv','bt'],vis:[]},
+      {t:'Sur le socle',x:socTxt(v.fx,e),add:[],vis:[]},
+      {t:'Finition',x:'Poncez au grain 180 puis 240, cassez toutes les arêtes, dépoussiérez et passez la finition. Collez les patins dessous.',add:dec,vis:[]});
+    info.push(`Pot à crayons : intérieur ${cm(lp-2*e)} × ${cm(Pm-2*e)} cm`,`Compartiments : ${cm(mw)} cm de large, ${cm(hf)} et ${cm(hm)} cm de haut`);
+    notes.push('Le bambou en panneau (comme sur la photo) se vend en 8 et 10 mm ; le contreplaqué bouleau de 8 mm fait aussi très bien l’affaire.',
+      'Pour charger le téléphone sur place, percez un trou de Ø 15 mm dans le socle sous la fente, et une encoche dans la butée pour le câble.');
+    const out=meuble({...v,e,mat:'obj'},{m3d:{pc,st,cotes:{W:L,H:es+Hp,D:Pm}},titre:'Organiseur de bureau',pieces:Pl,q:Q,notes,warns,info,vis:false,
+      vue:vueAuto(Object.values(pc),'z',{titre:'Vue de face',sauf:dec})});
+    out.extra=avantNotice(out.extra,assHTML('Les façons d’assembler','Chaque liaison peut se faire de plusieurs façons. Votre choix est encadré : la liste de débit et la notice en tiennent compte.',[
+      {t:'Les 4 angles du pot à crayons',m:['bout','feuil','onglet','ent','tour'],ch:v.as},
+      {t:'La joue, la cloison et la façade',m:['bout','rain','tour'],ch:mid,d:'Ce choix suit celui des angles : collé et cloué ou tourillons comme les angles, en rainure pour les feuillures, onglets et entures.'},
+      {t:'L’organiseur sur son socle',m:['vis','tourS','encas','aim'],ch:v.fx}]));
+    return {...out,big:`Organiseur ${cm(L)} × ${cm(Pm)} cm, avec support de téléphone`};
+  }};
+
+/* --- Organiseur de bureau à deux pots --- */
+TOOLS['o-bureau-pots']={nom:'Organiseur de bureau à deux pots',aide:'Deux pots à crayons de hauteurs différentes et, entre eux, un casier : le bloc-notes se glisse sous la tablette, les trombones se posent dessus. Le tout collé sur un socle.',
+  pic:'<path d="M3 40h42v4H3z"/><path d="M5 40V18h10v22M33 40V14h10v26M15 28h18M15 24h18"/><path d="M8 18V8M12 18V10M36 14V4M40 14V6"/>',
+  champs:[N('L','Longueur','cm',25),N('P','Profondeur','cm',10),N('Hg','Hauteur du pot de gauche','cm',11),N('lg','Largeur du pot de gauche','cm',7),N('Hd','Hauteur du pot de droite','cm',13),N('ld','Largeur du pot de droite','cm',8),
+    N('hc','Hauteur libre sous la tablette','cm',4.5),N('e','Épaisseur des parois','mm',8),N('es','Épaisseur du socle','mm',12),ANG_O,FIX_O,essO('bambou','bambou','cp','hetre','pin')],
+  calc(v){
+    const e=clamp(v.e,4,20), es=clamp(v.es,6,25), Pm=clamp(v.P*10,70,200), Hg=clamp(v.Hg*10,50,200), Hd=clamp(v.Hd*10,50,200), lg=clamp(v.lg*10,40,150), ld=clamp(v.ld*10,40,150), hc=clamp(v.hc*10,20,120), m=8, warns=[], notes=[], info=[];
+    let L=clamp(v.L*10,150,500); if(L-lg-ld<85){ L=lg+ld+85; warns.push(`Longueur portée à ${cm(L)} cm pour qu’un bloc-notes de 7,6 cm passe entre les pots.`); }
+    const y0=es, mw=L-lg-ld, x1=L-ld, hb=Math.min(hc+e+25,Math.min(Hg,Hd)), mid=v.as==='bout'?'bout':v.as==='tour'?'tour':'rain', gr=mid==='rain'?2*Math.round(e/3):0;
+    if(Pm-e<80) warns.push('Profondeur un peu juste pour un bloc-notes de 7,6 cm : prévoyez 9 cm au moins.');
+    const pc={}, Pl=[], Q={}, st=[], pg=[], pd=[], dec=[];
+    pc.so=B3('so',-m,0,-m,L+2*m,es,Pm+2*m,'p'); Pl.push({nom:'Socle',q:1,L:L+2*m,l:Pm+2*m,e:es,t:'p',note:`débord de ${cm(m)} cm tout autour`});
+    potO(pc,Pl,pg,'g','Pot de gauche',0,y0,lg,Pm,Hg,e,v.as); potO(pc,Pl,pd,'d','Pot de droite',x1,y0,ld,Pm,Hd,e,v.as);
+    pc.dm=B3('dm',lg,y0,0,mw,hb,e,'p'); pc.ta=B3('ta',lg,y0+hc,e,mw,e,Pm-e,'p');
+    Pl.push({nom:'Dos du casier',q:1,L:mw+gr,l:hb,e,t:'p',note:gr?'dans des rainures des pots':''},{nom:'Tablette',q:1,L:mw+gr,l:Pm-e,e,t:'p',note:`à ${cm(hc)} cm du socle${gr?', dans des rainures des pots':''}`});
+    const bw=Math.min(76,mw-6), bd=Math.min(76,Pm-e-6); pc.bn=B3('bn',lg+(mw-bw)/2,y0,e+(Pm-e-bd)/2,bw,Math.max(8,hc-12),bd,'note'); dec.push('bn');
+    crayons(pc,dec,0,lg,Pm,y0,Hg,e); crayons(pc,dec,x1,ld,Pm,y0,Hd,e);
+    qAss(Q,v.as,v.fx,e,8,10); finO(Q,v.ess,pieceArea(Pl),false); warnAss(warns,v.as,v.fx,e,es);
+    st.push({t:'Le socle',x:`Coupez le socle, ${v.fx==='encas'?'tracez et défoncez les rainures des parois, ':''}arrondissez ses arêtes et poncez-le.`,add:['so'],vis:[]},
+      {t:'Le pot de gauche',x:angTxt(v.as,e)+(gr?` Avant d’assembler, creusez dans le côté droit les rainures du dos du casier et de la tablette (${e} mm de large, ${Math.round(e/3)} mm de profondeur).`:''),add:pg,vis:[]},
+      {t:'Le pot de droite',x:`Même chose pour le pot de droite${gr?', rainures dans le côté gauche':''}.`,add:pd,vis:[]},
+      {t:'Le casier du milieu',x:`Collez le dos du casier puis la tablette entre les deux pots, la tablette à ${cm(hc)} cm du bas${mid==='rain'?', dans leurs rainures':mid==='tour'?', 2 tourillons à chaque bout':', 2 pointes sans tête à travers les pots'}. Vérifiez que les pots restent bien parallèles.`,add:['dm','ta'],vis:[]},
+      {t:'Sur le socle',x:socTxt(v.fx,e),add:[],vis:[]},
+      {t:'Finition',x:'Poncez, cassez les arêtes, passez la finition, collez les patins. Le bloc-notes se glisse sous la tablette.',add:dec,vis:[]});
+    info.push(`Pots : intérieur ${cm(lg-2*e)} et ${cm(ld-2*e)} cm de large, ${cm(Pm-2*e)} cm de profondeur`,`Sous la tablette : ${cm(mw)} cm de large, ${cm(hc)} cm de haut`);
+    notes.push('Un bloc de notes repositionnables carré fait 7,6 × 7,6 cm.','Pour un rendu plus soigné, posez un chant plaqué ou une baguette sur le devant de la tablette.');
+    const out=meuble({...v,e,mat:'obj'},{m3d:{pc,st,cotes:{W:L,H:es+Math.max(Hg,Hd),D:Pm}},titre:'Organiseur à deux pots',pieces:Pl,q:Q,notes,warns,info,vis:false,
+      vue:vueAuto(Object.values(pc),'z',{titre:'Vue de face',sauf:dec})});
+    out.extra=avantNotice(out.extra,assHTML('Les façons d’assembler','Chaque liaison peut se faire de plusieurs façons. Votre choix est encadré : la liste de débit et la notice en tiennent compte.',[
+      {t:'Les 4 angles de chaque pot',m:['bout','feuil','onglet','ent','tour'],ch:v.as},
+      {t:'La tablette et le dos du casier, entre les pots',m:['bout','rain','tour'],ch:mid,d:'Ce choix suit celui des angles : collé et cloué ou tourillons comme les angles, en rainure pour les feuillures, onglets et entures.'},
+      {t:'L’organiseur sur son socle',m:['vis','tourS','encas','aim'],ch:v.fx}]));
+    return {...out,big:`Organiseur ${cm(L)} × ${cm(Pm)} cm, deux pots et un casier`};
+  }};
+
+/* --- Porte-clés maison --- */
+const coeurPts=(cx,cy,s)=>Array.from({length:28},(_,i)=>{ const t=i/28*2*Math.PI; return [cx+s*Math.pow(Math.sin(t),3),cy+s*(13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t))/16]; });
+TOOLS['o-maison']={nom:'Porte-clés maison',aide:'Une planchette en forme de maison, un cœur découpé dans le toit et une rangée de crochets dessous. Toit dans la même planche ou rapporté dans un autre bois.',
+  pic:'<path d="M5 22L24 6l19 16H5z"/><path d="M9 22v10h30V22"/><path d="M24 18c-2-3-6-1-4 2l4 3 4-3c2-3-2-5-4-2z"/><path d="M15 32v7M24 32v7M33 32v7"/>',
+  champs:[N('W','Largeur, toit compris','cm',24),N('Hm','Hauteur des murs','cm',9),N('Ht','Hauteur du toit','cm',8),N('deb','Débord du toit de chaque côté','cm',1.5),N('e','Épaisseur','mm',12),N('nc','Nombre de crochets','',4),
+    C('coeur','Cœur découpé dans le toit',true),S('toit','Toit',[['un','Dans la même planche (comme sur la photo)'],['rap','Rapporté devant, dans un autre bois']],'un'),
+    S('tf','Fixation du toit rapporté',[['plaq','Collé à plat'],['visdos','Vissé par l’arrière'],['tourF','Tourillons de positionnement']],'plaq',{k:'toit',v:['rap']}),
+    S('cr','Crochets',[['platine','Crochets sur platine, vissés (comme sur la photo)'],['crochet','Crochets à visser'],['pat','Patères en bois (tourillons)']],'platine'),
+    S('fx','Accroche au mur',[['serrure','Deux trous de serrure au dos'],['pattes','Deux pattes à suspendre'],['cleat','Tasseau biseauté']],'serrure'),essO('cp','cp','pin','chene','hetre')],
+  calc(v){
+    const W=clamp(v.W*10,120,600), Hm=clamp(v.Hm*10,40,300), Ht=clamp(v.Ht*10,40,300), deb=clamp(v.deb*10,0,W/5), e=clamp(v.e,6,30), nc=clamp(Math.round(v.nc),1,10), rap=v.toit==='rap', er=rap?Math.max(6,Math.round(e/2)):0;
+    const pc={}, Pl=[], Q={}, st=[], notes=[], warns=[], info=[], ck=[], fxi=[], Ww=W-2*deb, Hg=Hm+Ht*Ww/W;
+    if(!rap){ pc.mu=B3('mu',deb,0,0,Ww,Hm,e,'p'); const tri=[[0,Hm],[W,Hm],[W/2,Hm+Ht]]; pc.pi=PZ3('pi',tri,0,e,'p'); pc.pi.v2={z:tri};
+      Pl.push({nom:'Maison',q:1,L:W,l:Hm+Ht,e,t:'p',note:`murs ${cm(Ww)} × ${cm(Hm)} cm, toit ${cm(Ht)} cm de haut, débord ${cm(deb)} cm`}); }
+    else { const pent=[[deb,0],[W-deb,0],[W-deb,Hm],[W/2,Hg],[deb,Hm]]; pc.mu=PZ3('mu',pent,0,e,'p'); pc.mu.v2={z:pent};
+      const tri=[[0,Hm],[W,Hm],[W/2,Hm+Ht]]; pc.to=PZ3('to',tri,e,er,'nw'); pc.to.sur=['mu']; pc.to.v2={z:tri};
+      Pl.push({nom:'Maison (murs et pignon)',q:1,L:Ww,l:Hg,e,t:'p',note:`pignon de ${cm(Hg-Hm)} cm, caché par le toit`},{nom:'Toit rapporté',q:1,L:W,l:Ht,e:er,t:'p',note:'triangle, dans un bois plus foncé'}); }
+    if(v.coeur){ const s=Math.min(Ht*0.24,W*0.09), hp=coeurPts(W/2,Hm+Ht*0.42,s); pc.co=PZ3('co',hp,rap?e+er:e,0.5,'o'); pc.co.sur=[rap?'to':'pi']; pc.co.v2={z:hp};
+      info.push(`Cœur : ${cm(2*s)} cm de large`); }
+    for(let i=0;i<nc;i++){ const x=deb+Ww*(i+0.5)/nc, id='ck'+i;
+      if(v.cr==='platine'){ pc[id+'a']=B3(id+'a',x-5,6,e,10,28,2,'met'); pc[id+'b']=B3(id+'b',x-2,-18,e+2,4,30,4,'met'); pc[id+'c']=B3(id+'c',x-2,-22,e+2,4,4,14,'met'); pc[id+'d']=B3(id+'d',x-2,-22,e+14,4,12,4,'met'); ck.push(id+'a',id+'b',id+'c',id+'d'); }
+      else if(v.cr==='crochet'){ pc[id+'a']=B3(id+'a',x-2,22,e,4,4,16,'met'); pc[id+'b']=B3(id+'b',x-2,22,e+12,4,14,4,'met'); ck.push(id+'a',id+'b'); }
+      else { pc[id+'a']=B3(id+'a',x-5,16,e,10,10,32,'m'); pc[id+'b']=B3(id+'b',x-7,14,e+32,14,14,5,'m'); ck.push(id+'a',id+'b'); } }
+    if(v.fx==='cleat'){ pc.tw=B3('tw',deb+15,Hm*0.5,-14,Ww-30,30,14,'p'); fxi.push('tw'); Pl.push({nom:'Tasseau à refendre à 45°',q:1,L:Ww-30,l:60,t:'m',sec:'15 × 60',note:'une moitié vissée au mur, l’autre collée au dos'}); }
+    if(v.fx==='pattes') [deb+20,W-deb-32].forEach((x,i)=>{ const id='pa'+i; pc[id]=B3(id,x,Hm-24,-1.5,12,34,1.5,'met'); fxi.push(id); });
+    // Fournitures
+    if(v.cr==='platine'){ addQ(Q,'Crochets sur platine (style ancien)',nc); Q['Vis 3 × 12 mm (souvent fournies)']=2*nc; }
+    if(v.cr==='crochet') addQ(Q,'Crochets à visser',nc);
+    if(v.cr==='pat'){ Q['Tourillon hêtre Ø 10 mm']=`${nc} bouts de 45 mm`; Q['Mèche à bois Ø 10 mm']=1; addQ(Q,'Colle à bois vinylique (flacon)',1); }
+    if(v.coeur){ Q['Mèche Ø 8 mm (trou de départ du cœur)']=1; Q['Scie à chantourner, ou scie sauteuse avec lame fine pour courbes']=1; Q['Lime demi-ronde et papier de verre roulé']=1; }
+    if(rap){ addQ(Q,'Colle à bois vinylique (flacon)',1); if(v.tf==='visdos') addQ(Q,`Vis 3 × ${Math.max(10,Math.floor((e+er-3)/2)*2)} mm`,4); if(v.tf==='tourF') addQ(Q,'Tourillons Ø 6 × 20 mm',2); }
+    if(v.fx==='serrure'){ Q['Fraise « trou de serrure » pour défonceuse (ou mèches Ø 10 et Ø 5 mm)']=1; Q['Vis tête ronde 4 × 35 mm et chevilles']=2; }
+    if(v.fx==='pattes'){ addQ(Q,'Pattes à suspendre (accroche-tableau)',2); Q['Vis ou clous X pour le mur']=2; }
+    if(v.fx==='cleat'){ Q['Vis 4 × 50 mm et chevilles (tasseau du mur)']=3; addQ(Q,'Colle à bois vinylique (flacon)',1); }
+    finO(Q,v.ess,W*(Hm+Ht)*2/1e6,false);
+    if(v.cr==='platine'&&e<12) warns.push('Crochets sur platine : leurs vis sont courtes, prenez une planche de 12 mm au moins.');
+    if((v.cr==='crochet'||v.cr==='pat')&&e<15) warns.push(`${v.cr==='pat'?'Patères en bois':'Crochets à visser'} : il faut 15 mm d’épaisseur au moins pour qu’ils tiennent.`);
+    if(v.fx==='serrure'&&e<12) warns.push('Trous de serrure : 12 mm d’épaisseur au moins, sinon le trou traverse.');
+    // Étapes
+    st.push({t:'Tracer et découper la maison',x:`Dessinez la maison sur un carton (murs ${cm(Ww)} × ${cm(Hm)} cm, toit ${cm(W)} cm de large et ${cm(Ht)} cm de haut), découpez ce gabarit et reportez-le sur la planche. Les coupes sont toutes droites : scie sauteuse guidée par une règle serrée, belle face dessous${!rap&&deb>0?'. Dans les deux angles rentrants sous le débord du toit, arrêtez la scie au trait et finissez à la scie à main':''}. Poncez les chants.`,add:rap?['mu']:['mu','pi'],vis:[]});
+    if(rap) st.push({t:'Le toit rapporté',x:`Découpez le triangle du toit dans un bois plus foncé${v.coeur?' et le cœur dedans (étape suivante) avant de le fixer':''}. ${{plaq:'Collez-le à plat sur le haut de la maison et serrez entre deux cales.',visdos:'Collez-le et vissez-le par l’arrière : 4 vis fraisées au dos.',tourF:'Percez 2 tourillons de positionnement, encollez et assemblez.'}[v.tf]}`,add:['to'],vis:[]});
+    if(v.coeur) st.push({t:'Le cœur',x:'Tracez le cœur avec un gabarit en papier plié en deux (il sera symétrique). Percez un trou de Ø 8 mm à l’intérieur, près de la pointe. Détendez la lame de la scie à chantourner, passez-la dans le trou, retendez-la et sciez en tournant doucement la planche (ou une scie sauteuse à lame fine, en plusieurs petites passes). Finissez à la lime demi-ronde et au papier de verre roulé sur un crayon.',add:['co'],vis:[]});
+    st.push({t:'Les crochets',x:`Tracez un trait à ${cm(v.cr==='platine'?2:2.5)} cm du bas et ${nc} repères réguliers (${cm(Ww/nc)} cm entre eux). ${{platine:'Avant-trous de 2 mm, puis vissez les platines.',crochet:'Avant-trous de 2 mm, puis vissez les crochets à la main.',pat:'Percez à Ø 10 mm, incliné vers le haut, sur les 2/3 de l’épaisseur, et collez les patères.'}[v.cr]}`,add:ck,vis:[]});
+    st.push({t:'L’accroche au mur',x:{serrure:'Au dos, à 2 cm sous le haut des murs et à 3 cm des bords, creusez 2 trous de serrure. Mesurez leur écart, reportez-le au mur avec un niveau, et vissez 2 vis en laissant dépasser la tête de 4 mm.',pattes:'Vissez 2 pattes au dos, en haut des murs, puis accrochez sur 2 vis ou clous mis de niveau.',cleat:'Refendez le tasseau à 45°. Collez une moitié au dos, biseau vers le bas ; vissez l’autre au mur, biseau vers le haut, de niveau. Emboîtez.'}[v.fx],add:fxi,vis:[]});
+    notes.push('Finition : passez la finition avant de poser les crochets.','Un trait de pyrograveur ou de feutre le long du toit souligne bien la forme.');
+    const out=meuble({...v,e,mat:'obj'},{m3d:{pc,st,cotes:{W,H:Hm+Ht,D:e+er}},titre:'Porte-clés maison',pieces:Pl,q:Q,notes,warns,info:[`${cm(W)} cm de large, ${cm(Hm+Ht)} cm de haut`,...info],vis:false,
+      vue:vueAuto(Object.values(pc).filter(p=>!ck.includes(p.id)&&!fxi.includes(p.id)),'z',{titre:'Vue de face'})});
+    out.extra=avantNotice(out.extra,assHTML('Les façons d’assembler','Chaque liaison peut se faire de plusieurs façons. Votre choix est encadré.',[
+      {t:'Les crochets sur la maison',m:['platine','crochet','pat'],ch:v.cr},
+      ...(rap?[{t:'Le toit rapporté sur la maison',m:['plaq','visdos','tourF'],ch:v.tf}]:[]),
+      {t:'La maison au mur',m:['serrure','pattes','cleat'],ch:v.fx}]));
+    return {...out,big:`Porte-clés maison · ${nc} crochet${nc>1?'s':''}`};
+  }};
+
+/* --- Support de téléphone en contreplaqué cintré --- */
+/* Tortue : trace une ligne moyenne faite de droites et d'arcs */
+function tortue(p,h){ const T={pts:[p.slice()],p:p.slice(),h,mk:[]};
+  T.L=l=>{ if(l>0.01){ T.p=[T.p[0]+l*Math.cos(T.h),T.p[1]+l*Math.sin(T.h)]; T.pts.push(T.p); } T.mk.push(T.pts.length-1); return T; };
+  T.A=(r,d)=>{ if(r>=0.5){ const sg=Math.sign(d), c=[T.p[0]+r*Math.cos(T.h+sg*Math.PI/2),T.p[1]+r*Math.sin(T.h+sg*Math.PI/2)], a0=Math.atan2(T.p[1]-c[1],T.p[0]-c[0]), n=Math.max(2,Math.ceil(Math.abs(d)/(Math.PI/16)));
+      for(let i=1;i<=n;i++){ const an=a0+d*i/n; T.p=[c[0]+r*Math.cos(an),c[1]+r*Math.sin(an)]; T.pts.push(T.p); } }
+    T.h+=d; T.mk.push(T.pts.length-1); return T; };
+  return T; }
+const METH_T={plis:'feuilles collées sur moule',kerf:'traits de scie',droit:'pièces droites',bloc:'découpé dans un bloc'};
+function decoupeTel(meth,o){
+  const L={
+    plis:['Les feuilles se coupent au <b>cutter</b>, contre une règle métallique serrée dessus : 4 ou 5 passages légers plutôt qu’un seul appuyé. Fil du bois <b>dans la longueur</b> de la bande pour toutes les couches.',
+      o.plis?`Coupez-les <b>1 cm plus larges et 4 cm plus longues</b> que la pièce finie (${o.plis}) : elles glissent un peu au serrage.`:'Coupez-les 1 cm plus larges et 4 cm plus longues que la pièce finie : elles glissent un peu au serrage.',
+      'Après séchage, recoupez les <b>deux chants</b> à la scie sur table (ou à la défonceuse guidée par une règle) pour arriver à la largeur : c’est ce qui donne la belle tranche rayée.',
+      'Le moule : MDF collé en bloc, profil tracé et scié à la <b>scie à ruban</b> ou à la scie sauteuse lame longue, bien d’équerre. Poncez les bosses : elles se verraient sur la pièce. Contre-moule : même profil décalé de l’épaisseur (une rondelle qui roule le long du moule, crayon dans le trou).'],
+    kerf:[o.kerf?`Une bande de ${o.kerf}, coupée à la scie circulaire avec un guide ou à la scie sur table.`:'Une bande d’un seul tenant, coupée à la scie circulaire avec un guide ou à la scie sur table.',
+      'Fil des plis extérieurs <b>dans la longueur</b> : la peau qui reste au fond des traits doit être un pli en long, sinon elle casse.',
+      o.kd?`Traits <b>en travers</b>, à la scie sur table avec le guide d’onglet et une butée (ou scie radiale) : lame à ${o.kd} de haut. Essayez sur une chute : la peau doit plier sans craquer.`:'Traits en travers, à la scie sur table avec le guide d’onglet et une butée (ou scie radiale), en laissant 1,5 à 2 mm. Essayez sur une chute.',
+      'Décalez la butée de l’espacement du tableau entre chaque trait ; les traits du sommet se font sur l’autre face. À la main : scie à dos et une cale de profondeur serrée contre la lame.'],
+    droit:['Quatre morceaux coupés à la <b>scie à onglet</b> ou à la scie sur table lame inclinée, aux angles donnés dans la liste de débit.',
+      'Faites un essai sur une chute et vérifiez avec une fausse équerre : 1° d’erreur se voit dans un onglet.',
+      'Le pied arrière se recoupe en bas à 20° pour poser à plat.'],
+    bloc:[o.bloc?`Plaques de contreplaqué de 15 mm coupées un peu plus grandes que le profil (${o.bloc}), collées en bloc.`:'Plaques de contreplaqué de 15 mm coupées un peu plus grandes que le profil, collées en bloc.',
+      o.fo?`Percez d’abord les arrondis intérieurs à la <b>mèche Forstner</b> (${o.fo}) : la scie n’a plus qu’à suivre des lignes presque droites.`:'Percez d’abord les arrondis intérieurs à la mèche Forstner : la scie n’a plus qu’à suivre des lignes presque droites.',
+      'Sciez le profil à la <b>scie à ruban</b> (lame de 6 mm pour les courbes serrées), ou à la scie à chantourner si le bloc fait moins de 5 cm. Restez 1 mm à côté du trait et finissez au tambour de ponçage.']};
+  const gen=['Tracez au crayon fin sur la face cachée, avec un gabarit en carton ou le profil ci-dessus imprimé à l’échelle 1.',
+    'Contre les éclats : ruban de masquage sur le trait ; belle face <b>dessous</b> pour la scie sauteuse et la scie circulaire (elles coupent en remontant), <b>dessus</b> pour la scie sur table, à onglet, à ruban et à chantourner.',
+    'Lame à denture fine « bois fin, coupe nette » et une planche martyre sous la pièce.',
+    'Sciez 1 mm à côté du trait, côté chute, et finissez au rabot, à la lime ou au papier de verre sur cale.'];
+  return `<div class="ass"><h3>Découper le contreplaqué</h3><div class="tab-notes"><b>Pour toutes les méthodes</b><ul>${gen.map(x=>`<li>${x}</li>`).join('')}</ul></div>
+    <div class="ass-grid">${['plis','kerf','droit','bloc'].map(k=>`<div class="ass-m${k===meth?' on':''}"><div class="ass-h"><b>${ASJ[k].n}</b>${k===meth?'<span class="ass-tag">votre choix</span>':''}</div><ul>${L[k].map(x=>`<li>${x}</li>`).join('')}</ul></div>`).join('')}</div></div>`; }
+TOOLS['o-tel']={nom:'Support de téléphone en contreplaqué cintré',aide:'Une seule bande de contreplaqué en vague : un petit rebord devant, le fond où pose le téléphone, un dossier incliné qui passe en arrondi et redescend en pied. Quatre façons de faire la forme, avec leurs découpes.',
+  pic:'<path d="M4 41h14M4 41v-5M18 41l9-25q3-6 6 0l9 25"/><path d="M8 39l11-31 6 2-10 29"/>',
+  champs:[S('meth','Façon de faire la forme',[['plis','Feuilles de 1 mm collées sur un moule (comme sur la photo)'],['kerf','Traits de scie dans un contreplaqué de 9 à 12 mm'],['droit','Pièces droites collées en onglet (le plus simple)'],['bloc','Découpé dans un bloc de contreplaqué collé']],'plis'),
+    N('W','Largeur','cm',8),N('H','Hauteur','cm',9),N('a','Inclinaison du téléphone','°',65),N('t','Épaisseur de la bande','mm',6),
+    S('jd','Assemblage des pièces droites',[['onglet','En onglet, avec clés'],['bout','Bout à bout, collé et cloué'],['rain','Dossier en rainure dans le fond']],'onglet',{k:'meth',v:['droit']}),
+    S('cp','Contreplaqué',[['noy','Placage noyer, âme bouleau (comme sur la photo)'],['boul','Bouleau'],['peup','Peuplier']],'noy')],
+  calc(v){
+    const meth=v.meth, W=clamp(v.W*10,50,200), H=clamp(v.H*10,60,200), aD=clamp(v.a,45,80), a=aD*Math.PI/180, warns=[], notes=[], info=[], b70=70*Math.PI/180;
+    let t=clamp(v.t,3,20);
+    if(meth==='kerf'&&t<9){ info.push('Épaisseur portée à 9 mm, le minimum pour les traits de scie'); t=9; }
+    if(meth==='bloc'&&t<10){ info.push('Épaisseur portée à 10 mm, le minimum pour ne pas casser'); t=10; }
+    if(meth==='plis'&&t>10) warns.push('Au-delà de 10 couches le serrage devient difficile : 5 à 8 mm suffisent.');
+    const dr=meth==='droit', r1=dr?0:meth==='kerf'?t/2+12:Math.max(t/2+6,10), r2=dr?0:meth==='kerf'?t/2+20:Math.max(t/2+10,16), r3=dr?0:meth==='kerf'?t/2+20:Math.max(t/2+12,18);
+    const lipH=Math.max(16+t,r1+t/2+6), pe=10;
+    const prof=(Lb,Ls)=>{ const T=tortue([0,lipH],-Math.PI/2); T.L(lipH-r1-t/2).A(r1,-Math.PI/2).L(Lb).A(r2,-a).L(Ls).A(r3,b70+a); T.Ld=Math.max(0,(T.p[1]-t/2)/Math.sin(b70)); T.L(T.Ld); return T; };
+    // Bande épaisse : contours décalés de t/2, raccordés en onglet à chaque sommet
+    const bande=T=>{ const pts=T.pts, seg=[]; for(let i=0;i<pts.length-1;i++){ const d=[pts[i+1][0]-pts[i][0],pts[i+1][1]-pts[i][1]], l=Math.hypot(...d); if(l>1e-6) seg.push({a:pts[i],b:pts[i+1],d:[d[0]/l,d[1]/l],l}); }
+      const nl=s=>[-s.d[1],s.d[0]];
+      const off=j=>{ if(j===0) return nl(seg[0]).map(x=>x*t/2); if(j===seg.length) return nl(seg[j-1]).map(x=>x*t/2);
+        const n1=nl(seg[j-1]), n2=nl(seg[j]), m2=[n1[0]+n2[0],n1[1]+n2[1]], lm=Math.hypot(...m2), c=(m2[0]*n1[0]+m2[1]*n1[1])/lm; return m2.map(x=>x/lm*t/2/c); };
+      const V=[seg[0].a,...seg.map(s=>s.b)], O=V.map((p,j)=>off(j)), Lc=V.map((p,j)=>[p[0]+O[j][0],p[1]+O[j][1]]), Rc=V.map((p,j)=>[p[0]-O[j][0],p[1]-O[j][1]]);
+      return {seg,Lc,Rc,H:Math.max(...Lc.map(p=>p[1]),...Rc.map(p=>p[1]))}; };
+    const T0=prof(20,0), ym0=Math.max(...T0.pts.slice(T0.mk[3]).map(p=>p[1]));
+    let Ls=Math.max(0,(H-t/2-ym0)/Math.sin(a));
+    for(let it=0;it<4&&Ls>0;it++){ const hh=bande(prof(20,Ls)).H; Ls=Math.max(0,Ls+(H-hh)/Math.sin(a)); }
+    if(Ls<=0&&bande(prof(20,0)).H>H+2) info.push('Hauteur trop faible pour ces arrondis : le support est un peu plus haut.');
+    const u=[-Math.cos(a),Math.sin(a)], nF=[Math.sin(a),Math.cos(a)];
+    const pied=T=>{ const S2=T.pts[T.mk[3]], b=[S2[0]+nF[0]*t/2,S2[1]+nF[1]*t/2], k=(t+1-b[1])/u[1]; return [b[0]+k*u[0],b[1]+k*u[1]]; };
+    const Pb0=pied(prof(20,Ls)), Lb=Math.max(4,20+Pb0[0]+nF[0]*pe+t/2+3);
+    const T=prof(Lb,Ls), Pb=pied(T), {seg,Lc,Rc}=bande(T);
+    const all=[...Lc,...Rc], s0=Math.min(...all.map(p=>p[0])), D=Math.max(...all.map(p=>p[0]))-s0, Htot=Math.max(...all.map(p=>p[1])), Z=p=>[p[0]-s0,p[1]];
+    const pc={}, ids=[];
+    seg.forEach((s,i)=>{ const id='b'+i; pc[id]=PX3(id,[Z(Lc[i]),Z(Lc[i+1]),Z(Rc[i+1]),Z(Rc[i])],0,W,v.cp); ids.push(id); });
+    const Q0=Z(Pb), R=(k,j)=>[Q0[0]+u[0]*k+nF[0]*j,Q0[1]+u[1]*k+nF[1]*j];
+    pc.tel=PX3('tel',[R(0,0),R(150,0),R(150,pe),R(0,pe)],(W-72)/2,72,'tel');
+    // Longueurs
+    const Ldev=seg.reduce((s,x)=>s+x.l,0), lip=lipH-r1-t/2;
+    const arcs=[{nom:'Rebord avant',r:r1,th:Math.PI/2,f:'dessus (côté téléphone)',av:lip},{nom:'Pied du dossier',r:r2,th:a,f:'dessus (côté téléphone)',av:Lb},{nom:'Sommet',r:r3,th:b70+a,f:'dessous',av:Ls}];
+    const k=2.5, skin=t<=12?1.5:2, kd=t-skin; let pos=0; const kerf=arcs.map(A=>{ pos+=A.av; const Ro=A.r+t/2, z=Ro*A.th, n=Math.ceil(kd*A.th/k), r={...A,n,esp:z/n,de:pos,a:pos+z}; pos+=z; return r; });
+    const Lflat=pos+T.Ld;
+    const Pl=[], Q={}, st=[], extra=[];
+    const nM=Math.ceil((W+20)/18), nb=Math.ceil(W/15);
+    if(meth==='plis'){ const nL=Math.max(3,Math.round(t)), nB=v.cp==='noy'?nL-2:nL;
+      Pl.push({nom:'Feuille de contreplaqué bouleau 1 mm',q:nB,L:Math.round(Ldev+40),l:W+10,e:1,t:'p',note:'« aviation » ou placage de 1 mm, fil dans la longueur'});
+      if(v.cp==='noy') Pl.push({nom:'Placage noyer 0,6 mm (les 2 faces)',q:2,L:Math.round(Ldev+40),l:W+10,e:1,t:'p',note:'fil dans la longueur'});
+      Pl.push({nom:'Couche du moule (MDF 18 mm)',q:nM,L:Math.round(D+100),l:Math.round(Htot+80),e:18,t:'p',note:'collées en bloc, sciées au profil : moule + contre-moule'});
+      Q['Colle urée-formol en poudre (ou époxy à prise lente)']='1 petit pot'; Q['Serre-joints']='6'; Q['Ruban d’emballage (pour que la colle ne prenne pas sur le moule)']='1 rouleau'; Q['Petit rouleau à colle']=1;
+      st.push({t:'Le moule et les feuilles',x:`Collez ${nM} couches de MDF de 18 mm en un bloc. Tracez dessus le profil du dessous de la bande (vue de côté ci-dessus, à l’échelle 1) et sciez-le : c’est le moule. Tracez sur la chute le même profil décalé de ${t} mm et sciez : c’est le contre-moule. Couvrez les deux de ruban d’emballage. Coupez ${nL} feuilles de ${cm(Ldev+40)} × ${cm(W+10)} cm au cutter, fil dans la longueur.`,add:ids,vis:[]},
+        {t:'Encoller et serrer',x:'Étalez la colle au rouleau sur une face de chaque feuille (jamais sur les faces extérieures), empilez, posez la pile sur le moule et serrez le contre-moule progressivement, du milieu vers les bouts. Essuyez la colle qui sort et laissez 24 heures.',add:[],vis:[]},
+        {t:'Recouper et finir',x:`Démoulez : la bande garde sa forme (elle s’ouvre à peine). Recoupez les deux chants pour arriver à ${cm(W)} cm et les bouts au trait, arrondissez les angles, poncez et passez la finition.`,add:['tel'],vis:[]}); }
+    if(meth==='kerf'){ Pl.push({nom:'Bande de contreplaqué',q:1,L:Math.round(Lflat+20),l:W,e:t,t:'p',note:'fil des plis extérieurs dans la longueur'},{nom:'Gabarit de mise en forme (MDF 18 mm)',q:nM,L:Math.round(D+60),l:Math.round(Htot+60),e:18,t:'p',note:'découpé au profil du dessous'});
+      addQ(Q,'Colle à bois vinylique (flacon)',1); Q['Serre-joints']='4'; Q['Sangle à cliquet ou chambre à air découpée']=1;
+      st.push({t:'Couper la bande et scier les traits',x:`Coupez la bande de ${cm(Lflat+20)} × ${cm(W)} cm. Reportez au crayon les zones de traits du tableau, mesurées depuis le bout du rebord. Lame à ${fr(kd,1)} mm de haut, sciez les traits en travers, aux espacements indiqués ; ceux du sommet sur l’autre face.`,add:ids,vis:[]},
+        {t:'Plier et coller',x:'Une courbe à la fois : remplissez les traits de colle, pliez doucement sur le gabarit en MDF et serrez (serre-joints ou sangle). Essuyez la colle et laissez sécher avant la courbe suivante.',add:[],vis:[]},
+        {t:'Finir',x:'Rebouchez les traits visibles avec de la colle mêlée de sciure fine, poncez, arrondissez les arêtes et passez la finition.',add:['tel'],vis:[]});
+      extra.push(`<div class="tab-g"><b>Traits de scie : lame de ${fr(k,1)} mm, ${fr(kd,1)} mm de profondeur, il reste ${fr(skin,1)} mm</b><div class="tbl"><table><thead><tr><th>Courbe</th><th>Traits</th><th>Espacement</th><th>Zone, depuis le bout du rebord</th><th>Face</th></tr></thead><tbody>${kerf.map(r=>`<tr><td>${r.nom}<br><span class="u">${fr(r.th*180/Math.PI,0)}°, rayon intérieur ${fr(r.r-t/2,0)} mm</span></td><td>${r.n}</td><td>${fr(r.esp,1)} mm</td><td>de ${cm(r.de)} à ${cm(r.a)} cm</td><td>${r.f}</td></tr>`).join('')}</tbody></table></div></div>`); }
+    if(dr){ const noms=seg.length===4?['Rebord avant','Fond','Dossier incliné','Pied arrière']:seg.map((s,i)=>'Pièce '+(i+1));
+      const dev=j=>(j<=0||j>=seg.length)?0:Math.acos(Math.max(-1,Math.min(1,seg[j-1].d[0]*seg[j].d[0]+seg[j-1].d[1]*seg[j].d[1])));
+      seg.forEach((s,i)=>{ const da=dev(i), db=dev(i+1), Lo=s.l+t/2*(Math.tan(da/2)+Math.tan(db/2)), g=x=>fr(x*90/Math.PI,1)+'°';
+        const nt=[da?`onglet ${g(da)} au départ`:'',db?`onglet ${g(db)} au bout`:'',i===seg.length-1?'coupe à 20° en bas pour poser à plat':''].filter(Boolean).join(', ');
+        Pl.push({nom:noms[i],q:1,L:Math.round(Lo),l:W,e:t,t:'p',note:nt+' — longueur prise sur la face extérieure'}); });
+      addQ(Q,'Colle à bois vinylique (flacon)',1); Q['Ruban de masquage (serrage au collage)']='1 rouleau';
+      if(v.jd==='onglet') Q['Clés : bandes de placage contrasté']='6 petites'; if(v.jd==='bout') addQ(Q,'Pointes sans tête 1,2 × 20 mm',12); if(v.jd==='rain') Q['Défonceuse ou scie sur table (rainure inclinée)']=1;
+      const ix=i=>ids[i]?[ids[i]]:[];
+      st.push({t:'Le rebord et le fond',x:{onglet:'Coupez les pièces aux angles de la liste. Collez le rebord sur le fond, onglet contre onglet, maintenu par du ruban de masquage tendu.',bout:'Collez le rebord contre le bout du fond et clouez avec 3 pointes sans tête.',rain:'Collez le rebord contre le bout du fond, serré au ruban de masquage.'}[v.jd],add:[...ix(0),...ix(1)],vis:[]},
+        {t:'Le dossier',x:{onglet:`Collez le dossier sur le fond, onglets de ${fr(aD/2,1)}° face à face. Vérifiez l’inclinaison (${aD}°) avec une fausse équerre.`,bout:'Collez le dossier contre l’arrière du fond et clouez à travers le fond.',rain:`Creusez dans le fond une rainure inclinée à ${aD}° (défonceuse ou scie sur table lame inclinée), d’un tiers de l’épaisseur : le dossier s’y glisse avec de la colle.`}[v.jd],add:ix(2),vis:[]},
+        {t:'Le pied et la finition',x:`Collez le pied sous le haut du dossier${v.jd==='onglet'?', puis sciez 2 traits en travers de chaque angle et collez-y des clés':''}. Arrondissez les angles extérieurs à la ponceuse, poncez et passez la finition.`,add:[...ids.slice(3),'tel'],vis:[]}); }
+    if(meth==='bloc'){ Pl.push({nom:'Plaque de contreplaqué 15 mm',q:nb,L:Math.round(D+20),l:Math.round(Htot+20),e:15,t:'p',note:`collées en bloc de ${nb*15} mm, poncé à ${cm(W)} cm`});
+      addQ(Q,'Colle à bois vinylique (flacon)',1); Q['Serre-joints']='4'; Q['Mèches Forstner']=[r1,r2,r3].map(r=>`Ø ${Math.round(2*(r-t/2))} mm`).join(', ');
+      st.push({t:'Le bloc',x:`Collez les ${nb} plaques de 15 mm les unes sur les autres, serrez et laissez une nuit. Dressez une face au rabot ou à la ponceuse.`,add:ids,vis:[]},
+        {t:'Tracer et découper',x:`Collez le profil (vue de côté, à l’échelle 1) sur le côté du bloc. Percez les arrondis intérieurs à la Forstner, puis sciez le contour à la scie à ruban, 1 mm à côté du trait.`,add:[],vis:[]},
+        {t:'Finir',x:'Poncez les courbes au tambour de ponçage, arrondissez les arêtes et passez la finition : les plis du contreplaqué dessinent des rayures sur les côtés.',add:['tel'],vis:[]}); }
+    Q['Huile dure ou vernis mat']='1 petit flacon'; Q['Papier de verre grain 120, 180 et 240']='1 feuille de chaque'; Q['Bande de liège adhésive (sous le fond et le pied)']=1;
+    info.unshift(`Encombrement : ${cm(D)} cm de profondeur, ${cm(W)} cm de large, ${cm(Htot)} cm de haut`,`Longueur de la bande à plat : ${cm(meth==='kerf'?Lflat:Ldev)} cm`,`Téléphone incliné à ${aD}°`);
+    notes.push('Le téléphone peut dépasser de chaque côté : le support n’a pas besoin d’être aussi large que lui.','Pour un téléphone avec une coque épaisse, mettez une épaisseur de plus au rebord ou augmentez la hauteur.');
+    const o={plis:meth==='plis'?`${cm(Ldev+40)} × ${cm(W+10)} cm`:'',kerf:meth==='kerf'?`${cm(Lflat+20)} × ${cm(W)} cm`:'',kd:meth==='kerf'?`${fr(kd,1)} mm`:'',bloc:meth==='bloc'?`${cm(D+20)} × ${cm(Htot+20)} cm`:'',fo:meth==='bloc'?[r1,r2,r3].map(r=>`Ø ${Math.round(2*(r-t/2))} mm`).join(', '):''};
+    const out=meuble({...v,e:t,mat:'obj'},{m3d:{pc,st,cotes:{W,H:Htot,D}},titre:'Support de téléphone',pieces:Pl,q:Q,notes,warns,info,vis:false,ep:meth==='plis'?1:meth==='bloc'?15:t,
+      vue:vueAuto(ids.map(i=>pc[i]),'x',{titre:'Vue de côté : le profil à tracer'})});
+    const grp=[{t:'La forme : quatre façons de la faire',m:['plis','kerf','droit','bloc'],ch:meth}];
+    if(dr) grp.push({t:'Les pièces droites entre elles',m:['onglet','bout','rain'],ch:v.jd});
+    out.extra=avantNotice(out.extra,assHTML('Les façons de faire et d’assembler','La bande peut se faire de quatre façons. Votre choix est encadré : la liste de débit, les fournitures et la notice en tiennent compte.',grp)+decoupeTel(meth,o)+extra.join(''));
+    return {...out,big:`Support de téléphone · ${METH_T[meth]}`};
+  }};
+
 
 /* ============ JARDIN : ABRI À INSECTES ============ */
 TEINTE.paille=[46,62,70]; TEINTE.bam=[48,40,64]; TEINTE.cone=[22,45,32]; TEINTE.bri=[12,52,52]; TEINTE.eco=[26,32,42]; TEINTE.buche=[32,42,58];
